@@ -17,7 +17,6 @@ package org.openlmis.fulfillment.domain;
 
 import org.openlmis.fulfillment.extension.point.OrderNumberGenerator;
 import org.openlmis.fulfillment.domain.Order;
-import org.slf4j.profiler.Profiler;
 import org.springframework.stereotype.Component;
 import java.math.BigInteger;
 
@@ -26,15 +25,11 @@ public class SequenceNumberGenerator implements OrderNumberGenerator {
 
   @Override
   public String generate(Order order) {
-    XLOGGER.entry(Order);
-    Profiler profiler = new Profiler("SEQ_NR_GENERATOR");
-    profiler.setLogger(XLOGGER);
 
     String id = order.getExternalId().toString();
     String base36Id = new BigInteger(id.replace("-", ""), 16)
         .toString(36).toUpperCase();
 
-    profiler.stop().log();
     return base36Id.substring(0, 8);
   }
 }
