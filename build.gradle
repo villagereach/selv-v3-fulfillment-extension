@@ -49,7 +49,7 @@ dependencies {
     compile "org.springframework.boot:spring-boot-starter-web"
     compile "org.slf4j:slf4j-ext"
     annotationProcessor 'org.projectlombok:lombok:1.16.20'
-    compile "org.openlmis:openlmis-fulfillment:8.2.0:exec"
+    compile "org.openlmis:openlmis-fulfillment:8.2.2-SNAPSHOT:exec"
 }
 
 bootJar {
