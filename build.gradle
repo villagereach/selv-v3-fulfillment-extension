@@ -88,7 +88,9 @@ jacocoTestReport {
         csv.enabled false
     }
 
-    additionalSourceDirs = files(sourceSets.main.allJava.srcDirs)
+//    additionalSourceDirs = files(sourceSets.main.allJava.srcDirs)
+    additionalSourceDirs.setFrom(sourceSets.main.allJava.srcDirs)
+
 }
 
 def time = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
