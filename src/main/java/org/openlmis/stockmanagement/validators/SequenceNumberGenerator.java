@@ -13,13 +13,12 @@
  * http://www.gnu.org/licenses.  For additional information contact info@OpenLMIS.org. 
  */
 
-package org.openlmis.fulfillment.domaint;
+package org.openlmis.fulfillment.domain;
 
 import org.openlmis.fulfillment.extension.point.OrderNumberGenerator;
 import org.openlmis.fulfillment.domain.Order;
 import org.springframework.stereotype.Component;
 import java.math.BigInteger;
-import java.time.Year;
 
 @Component(value = "SequenceNumberGenerator")
 public class SequenceNumberGenerator implements OrderNumberGenerator {
@@ -27,8 +26,6 @@ public class SequenceNumberGenerator implements OrderNumberGenerator {
   @Override
   public String generate(Order order) {
 
-    order.getFacilityId();
-    Year.now().getValue();
     String id = order.getExternalId().toString();
     String base36Id = new BigInteger(id.replace("-", ""), 16)
         .toString(36).toUpperCase();
