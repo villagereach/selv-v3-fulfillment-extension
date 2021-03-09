@@ -17,8 +17,9 @@ package org.openlmis.fulfillment.domain;
 
 import org.openlmis.fulfillment.extension.point.OrderNumberGenerator;
 import org.openlmis.fulfillment.repository.OrderRepository;
+import org.openlmis.fulfillment.web.NotFoundException;
 import org.openlmis.referencedata.domain.Facility;
-import org.openlmis.referencedata.exception.ValidationMessageException;
+import org.openlmis.fulfillment
 import org.openlmis.referencedata.repository.FacilityRepository;
 import org.openlmis.referencedata.util.messagekeys.FacilityMessageKeys;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,8 +56,8 @@ public class SequenceNumberGenerator implements OrderNumberGenerator {
     Facility facility = facilityRepository.findById(facilityId).orElse(null);
 
     if (facility == null) {
-      throw new ValidationMessageException(new Message(
-          FacilityMessageKeys.ERROR_NOT_FOUND_WITH_ID, facilityId));
+      throw new NotFoundException(new Message(
+          FacilityMessageKeys.ERROR_NOT_FOUND_WITH_ID, facilityId).toString());
     }
     return facility;
   }
