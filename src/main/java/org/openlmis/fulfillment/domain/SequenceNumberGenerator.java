@@ -17,15 +17,14 @@ package org.openlmis.fulfillment.domain;
 
 import org.openlmis.fulfillment.extension.point.OrderNumberGenerator;
 import org.openlmis.fulfillment.repository.OrderRepository;
+import org.openlmis.fulfillment.service.referencedata.FacilityDto;
+import org.openlmis.fulfillment.service.referencedata.FacilityReferenceDataService;
+import org.openlmis.fulfillment.util.Message;
 import org.openlmis.fulfillment.web.NotFoundException;
-import org.openlmis.referencedata.domain.Facility;
-import org.openlmis.referencedata.repository.FacilityRepository;
-import org.openlmis.referencedata.util.messagekeys.FacilityMessageKeys;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import java.time.Year;
 import java.util.UUID;
-import org.openlmis.referencedata.util.Message;
 
 
 @Component(value = "SequenceNumberGenerator")
@@ -35,12 +34,13 @@ public class SequenceNumberGenerator implements OrderNumberGenerator {
   private OrderRepository orderRepository;
 
   @Autowired
-  private FacilityRepository facilityRepository;
+  private FacilityReferenceDataService facilityReferenceDataService;
+
 
   @Override
   public String generate(Order order) {
 
-    Facility supplyingFacility = findSupplyingFacility(order.getSupplyingFacilityId());
+    FacilityDto supplyingFacility = findSupplyingFacility(order.getSupplyingFacilityId());
 
     String previousNumberOrderCode =
         orderRepository.findLastOrderCodeOrCreateSequenceCode(supplyingFacility.getId());
@@ -50,13 +50,13 @@ public class SequenceNumberGenerator implements OrderNumberGenerator {
     return Year.now().getValue() + "/" + supplyingFacility.getCode() + "/" + newCode;
   }
 
-  private Facility  findSupplyingFacility(UUID facilityId) {
+  private FacilityDto  findSupplyingFacility(UUID facilityId) {
 
-    Facility facility = facilityRepository.findById(facilityId).orElse(null);
+    FacilityDto facility = facilityReferenceDataService.findOne(facilityId);
 
     if (facility == null) {
       throw new NotFoundException(new Message(
-          FacilityMessageKeys.ERROR_NOT_FOUND_WITH_ID, facilityId).toString());
+          "Facility not found", facilityId).toString());
     }
     return facility;
   }

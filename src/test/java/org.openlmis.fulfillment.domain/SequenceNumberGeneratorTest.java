@@ -6,15 +6,14 @@ import org.openlmis.fulfillment.OrderDataBuilder;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.time.Year;
-import java.util.Optional;
 import java.util.UUID;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.openlmis.fulfillment.repository.OrderRepository;
-import org.openlmis.referencedata.domain.Facility;
-import org.openlmis.referencedata.repository.FacilityRepository;
+import org.openlmis.fulfillment.service.referencedata.FacilityDto;
+import org.openlmis.fulfillment.service.referencedata.FacilityReferenceDataService;
 
 
 @RunWith(MockitoJUnitRunner.class)
@@ -24,7 +23,7 @@ public class SequenceNumberGeneratorTest {
   private SequenceNumberGenerator sequenceNumberGenerator;
 
   @Mock
-  private FacilityRepository facilityRepository;
+  private FacilityReferenceDataService facilityReferenceDataService;
 
   @Mock
   private OrderRepository orderRepository;
@@ -58,9 +57,9 @@ public class SequenceNumberGeneratorTest {
     String previous = "0002";
     String expected = "0003";
 
-    Facility facility = new Facility();
+    FacilityDto facility = new FacilityDto();
     facility.setCode("TESTCODE");
-    when(facilityRepository.findById(facility.getId())).thenReturn(Optional.of(facility));
+    when(facilityReferenceDataService.findOne(facility.getId())).thenReturn(facility);
 
     Order one = generateInstance(facility.getId());
     orderRepository.save(one);
@@ -80,9 +79,9 @@ public class SequenceNumberGeneratorTest {
 
     String expected = "0001";
 
-    Facility facility = new Facility();
+    FacilityDto facility = new FacilityDto();
     facility.setCode("TESTCODE");
-    when(facilityRepository.findById(facility.getId())).thenReturn(Optional.of(facility));
+    when(facilityReferenceDataService.findOne(facility.getId())).thenReturn(facility);
 
     Order one = generateInstance(facility.getId());
     orderRepository.save(one);
@@ -101,9 +100,9 @@ public class SequenceNumberGeneratorTest {
     String previous = "0001";
     String expected = "0002";
 
-    Facility facility = new Facility();
+    FacilityDto facility = new FacilityDto();
     facility.setCode("TESTCODE");
-    when(facilityRepository.findById(facility.getId())).thenReturn(Optional.of(facility));
+    when(facilityReferenceDataService.findOne(facility.getId())).thenReturn(facility);
 
     Order one = generateInstance(facility.getId());
     orderRepository.save(one);
@@ -124,9 +123,9 @@ public class SequenceNumberGeneratorTest {
     String previous = "XCASDW";
     String expected = "0001";
 
-    Facility facility = new Facility();
+    FacilityDto facility = new FacilityDto();
     facility.setCode("TESTCODE");
-    when(facilityRepository.findById(facility.getId())).thenReturn(Optional.of(facility));
+    when(facilityReferenceDataService.findOne(facility.getId())).thenReturn(facility);
 
     Order one = generateInstance(facility.getId());
     orderRepository.save(one);
