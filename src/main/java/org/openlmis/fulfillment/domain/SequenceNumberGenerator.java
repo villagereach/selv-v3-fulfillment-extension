@@ -19,7 +19,6 @@ import org.openlmis.fulfillment.extension.point.OrderNumberGenerator;
 import org.openlmis.fulfillment.repository.OrderRepository;
 import org.openlmis.fulfillment.web.NotFoundException;
 import org.openlmis.referencedata.domain.Facility;
-import org.openlmis.fulfillment
 import org.openlmis.referencedata.repository.FacilityRepository;
 import org.openlmis.referencedata.util.messagekeys.FacilityMessageKeys;
 import org.springframework.beans.factory.annotation.Autowired;
