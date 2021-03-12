@@ -50,7 +50,7 @@ dependencies {
     compile "org.springframework.boot:spring-boot-starter-web"
     compile "org.slf4j:slf4j-ext"
     annotationProcessor 'org.projectlombok:lombok:1.16.20'
-    compile "org.openlmis:openlmis-fulfillment:8.2.2-SNAPSHOT:exec"
+    compile "org.openlmis:openlmis-fulfillment:8.2.2-SELV-SNAPSHOT:exec"
 
     testCompile "org.springframework.boot:spring-boot-starter-test"
     testCompile "junit:junit"
@@ -95,7 +95,7 @@ jacocoTestReport {
         csv.enabled false
     }
 
-    additionalSourceDirs = files(sourceSets.main.allJava.srcDirs)
+   additionalSourceDirs = files(sourceSets.main.allJava.srcDirs)
 }
 
 def time = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
