@@ -8,8 +8,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.UUID;
 
-public interface OrderSelvRepository extends PagingAndSortingRepository<Order, UUID>,
-    OrderRepositoryCustom {
+public interface OrderSelvRepository extends PagingAndSortingRepository<Order, UUID> {
 
   @Query(value =
       "SELECT\n"
