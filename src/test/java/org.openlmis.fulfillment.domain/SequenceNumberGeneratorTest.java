@@ -12,6 +12,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.openlmis.fulfillment.repository.OrderRepository;
+import org.openlmis.fulfillment.repository.OrderSelvRepository;
 import org.openlmis.fulfillment.service.referencedata.FacilityDto;
 import org.openlmis.fulfillment.service.referencedata.FacilityReferenceDataService;
 
@@ -26,7 +27,7 @@ public class SequenceNumberGeneratorTest {
   private FacilityReferenceDataService facilityReferenceDataService;
 
   @Mock
-  private OrderRepository orderRepository;
+  private OrderSelvRepository orderSelvRepository;
 
   protected Order generateInstance() {
     return generateInstance(OrderStatus.FULFILLING);
@@ -62,8 +63,8 @@ public class SequenceNumberGeneratorTest {
     when(facilityReferenceDataService.findOne(facility.getId())).thenReturn(facility);
 
     Order one = generateInstance(facility.getId());
-    orderRepository.save(one);
-    when(orderRepository.findLastOrderCodeOrCreateSequenceCode(facility.getId())).thenReturn(
+    orderSelvRepository.save(one);
+    when(orderSelvRepository.findLastOrderCodeOrCreateSequenceCode(facility.getId())).thenReturn(
         previous);
 
     String expectedCode = Year.now().getValue() + "/" + facility.getCode() + "/" + expected;
@@ -84,7 +85,7 @@ public class SequenceNumberGeneratorTest {
     when(facilityReferenceDataService.findOne(facility.getId())).thenReturn(facility);
 
     Order one = generateInstance(facility.getId());
-    orderRepository.save(one);
+    orderSelvRepository.save(one);
 
     String expectedCode = Year.now().getValue() + "/" + facility.getCode() + "/" + expected;
 
@@ -105,8 +106,8 @@ public class SequenceNumberGeneratorTest {
     when(facilityReferenceDataService.findOne(facility.getId())).thenReturn(facility);
 
     Order one = generateInstance(facility.getId());
-    orderRepository.save(one);
-    when(orderRepository.findLastOrderCodeOrCreateSequenceCode(facility.getId())).thenReturn(
+    orderSelvRepository.save(one);
+    when(orderSelvRepository.findLastOrderCodeOrCreateSequenceCode(facility.getId())).thenReturn(
         previous);
 
     String expectedCode = Year.now().getValue() + "/" + facility.getCode() + "/" + expected;
@@ -128,8 +129,8 @@ public class SequenceNumberGeneratorTest {
     when(facilityReferenceDataService.findOne(facility.getId())).thenReturn(facility);
 
     Order one = generateInstance(facility.getId());
-    orderRepository.save(one);
-    when(orderRepository.findLastOrderCodeOrCreateSequenceCode(facility.getId())).thenReturn(
+    orderSelvRepository.save(one);
+    when(orderSelvRepository.findLastOrderCodeOrCreateSequenceCode(facility.getId())).thenReturn(
         previous);
 
     String expectedCode = Year.now().getValue() + "/" + facility.getCode() + "/" + expected;

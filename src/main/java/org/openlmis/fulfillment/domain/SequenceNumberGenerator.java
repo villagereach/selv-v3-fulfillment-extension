@@ -15,8 +15,8 @@
 
 package org.openlmis.fulfillment.domain;
 
+import org.openlmis.fulfillment.repository.OrderSelvRepository;
 import org.openlmis.fulfillment.extension.point.OrderNumberGenerator;
-import org.openlmis.fulfillment.repository.OrderRepository;
 import org.openlmis.fulfillment.service.referencedata.FacilityDto;
 import org.openlmis.fulfillment.service.referencedata.FacilityReferenceDataService;
 import org.openlmis.fulfillment.util.Message;
@@ -31,7 +31,7 @@ import java.util.UUID;
 public class SequenceNumberGenerator implements OrderNumberGenerator {
 
   @Autowired
-  private OrderRepository orderRepository;
+  private OrderSelvRepository orderSelvRepository;
 
   @Autowired
   private FacilityReferenceDataService facilityReferenceDataService;
@@ -43,7 +43,7 @@ public class SequenceNumberGenerator implements OrderNumberGenerator {
     FacilityDto supplyingFacility = findSupplyingFacility(order.getSupplyingFacilityId());
 
     String previousNumberOrderCode =
-        orderRepository.findLastOrderCodeOrCreateSequenceCode(supplyingFacility.getId());
+        orderSelvRepository.findLastOrderCodeOrCreateSequenceCode(supplyingFacility.getId());
 
     String newCode = generateOrderCode(previousNumberOrderCode);
 
