@@ -95,7 +95,7 @@ jacocoTestReport {
         csv.enabled false
     }
 
-  additionalSourceDirseDirs = files(sourceSets.main.allJava.srcDirs)
+  additionalSourceDirs = files(sourceSets.main.allJava.srcDirs)
 
 }
 
