@@ -152,16 +152,27 @@ uploadArchives {
             snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
                 authentication(userName: ossrhUsername, password: ossrhPassword)
             }
+                url = 'https://openlmis.org'
 
             pom.project {
                 name projectName
                 packaging 'jar'
                 description projectDescription
+                url = 'https://www.selv.org.mz'
 
                 licenses {
                     license {
                         name 'GNU Affero General Public License, Version 3'
                         url 'https://www.gnu.org/licenses/agpl-3.0.txt'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = 'techcommittee'
+                        name = 'tech committee'
+                        email = 'info@openlmis.org'
+                        organizationUrl = 'https://villagereach.org'
                     }
                 }
             }
