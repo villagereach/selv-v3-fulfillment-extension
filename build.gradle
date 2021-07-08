@@ -42,7 +42,8 @@ repositories {
     mavenCentral()
     maven { url "http://jaspersoft.artifactoryonline.com/jaspersoft/third-party-ce-artifacts/" }
     maven { url "http://jasperreports.sourceforge.net/maven2/" }
-    maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
+    // maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
+    maven { url "https://oss.sonatype.org/#stagingRepositories"}
 }
 
 dependencies {
@@ -50,7 +51,7 @@ dependencies {
     compile "org.springframework.boot:spring-boot-starter-web"
     compile "org.slf4j:slf4j-ext"
     annotationProcessor 'org.projectlombok:lombok:1.16.20'
-    compile "org.openlmis:openlmis-fulfillment:9.0.0:exec"
+    compile "org.openlmis:openlmis-fulfillment:9.0.1:exec"
 
     testCompile "org.springframework.boot:spring-boot-starter-test"
     testCompile "junit:junit"
