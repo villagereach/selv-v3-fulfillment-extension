@@ -15,6 +15,7 @@
 
 package org.openlmis.fulfillment.domain;
 
+import org.openlmis.fulfillment.repository.FacilityOrderSequenceRepository;
 import org.openlmis.fulfillment.repository.OrderSelvRepository;
 import org.openlmis.fulfillment.extension.point.OrderNumberGenerator;
 import org.openlmis.fulfillment.service.referencedata.FacilityDto;
@@ -23,6 +24,7 @@ import org.openlmis.fulfillment.util.Message;
 import org.openlmis.fulfillment.web.NotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
 import java.time.Year;
 import java.util.UUID;
 
@@ -34,6 +36,9 @@ public class SequenceNumberGenerator implements OrderNumberGenerator {
   private OrderSelvRepository orderSelvRepository;
 
   @Autowired
+  private FacilityOrderSequenceRepository facilityOrderSequenceRepository;
+
+  @Autowired
   private FacilityReferenceDataService facilityReferenceDataService;
 
 
@@ -42,15 +47,43 @@ public class SequenceNumberGenerator implements OrderNumberGenerator {
 
     FacilityDto supplyingFacility = findSupplyingFacility(order.getSupplyingFacilityId());
 
-    String previousNumberOrderCode =
-        orderSelvRepository.findLastOrderCodeOrCreateSequenceCode(supplyingFacility.getId());
+    int sequenceValue = getNextSequenceValue(supplyingFacility.getId());
 
-    String newCode = generateOrderCode(previousNumberOrderCode);
+    String newCode = generateOrderCode(sequenceValue);
 
     return Year.now().getValue() + "/" + supplyingFacility.getCode() + "/" + newCode;
   }
 
-  private FacilityDto  findSupplyingFacility(UUID facilityId) {
+  private int getNextSequenceValue(UUID facilityId) {
+    facilityOrderSequenceRepository.lockTable();
+    FacilityOrderSequence sequence = facilityOrderSequenceRepository.findByFacilityIdWithLock(facilityId);
+
+    if (sequence == null) {
+      String lastOrderCode = orderSelvRepository.findLastOrderCodeOrCreateSequenceCode(facilityId);
+      int initialValue = (lastOrderCode != null) ? parseOrderCode(lastOrderCode) : 0;
+      FacilityOrderSequence newSequence = new FacilityOrderSequence(facilityId, initialValue);
+      facilityOrderSequenceRepository.save(newSequence);
+      sequence = facilityOrderSequenceRepository.findByFacilityIdWithLock(facilityId);
+    }
+
+    int newValue = sequence.getLastSequenceValue() + 1;
+    sequence.setLastSequenceValue(newValue);
+    facilityOrderSequenceRepository.save(sequence);
+    return newValue;
+  }
+
+  private int parseOrderCode(String orderCode) {
+    if (orderCode == null) {
+      return 0;
+    }
+    try {
+      return Integer.parseInt(orderCode);
+    } catch (NumberFormatException e) {
+      return 0;
+    }
+  }
+
+  private FacilityDto findSupplyingFacility(UUID facilityId) {
 
     FacilityDto facility = facilityReferenceDataService.findOne(facilityId);
 
@@ -61,30 +94,15 @@ public class SequenceNumberGenerator implements OrderNumberGenerator {
     return facility;
   }
 
-  private String generateOrderCode(String previousNumberOrderCode) {
-
-    if (previousNumberOrderCode == null) {
-      previousNumberOrderCode = "0000";
-    }
-
-    String newCode;
-    Integer parsed;
-
-    try {
-      parsed = Integer.parseInt(previousNumberOrderCode);
-    } catch (NumberFormatException e) {
-      parsed = 0;
-    }
-    parsed++;
-    if (parsed <= 9) {
-      newCode = "000" + parsed;
-    } else if (parsed <= 99) {
-      newCode = "00" + parsed;
-    } else if (parsed <= 999) {
-      newCode = "0" + parsed;
+  private String generateOrderCode(int sequenceValue) {
+    if (sequenceValue <= 9) {
+      return "000" + sequenceValue;
+    } else if (sequenceValue <= 99) {
+      return "00" + sequenceValue;
+    } else if (sequenceValue <= 999) {
+      return "0" + sequenceValue;
     } else {
-      newCode = parsed.toString();
+      return String.valueOf(sequenceValue);
     }
-    return newCode;
   }
 }
