@@ -11,8 +11,8 @@ import java.util.UUID;
 public class FacilityOrderSequence {
 
   @Id
-  @Column(name = "facilityid")
-  private UUID facilityId;
+  @Column(name = "supplyingfacilityid")
+  private UUID supplyingFacilityId;
 
   @Column(name = "lastsequencevalue")
   private Integer lastSequenceValue;
@@ -20,17 +20,17 @@ public class FacilityOrderSequence {
   public FacilityOrderSequence() {
   }
 
-  public FacilityOrderSequence(UUID facilityId, Integer lastSequenceValue) {
-    this.facilityId = facilityId;
+  public FacilityOrderSequence(UUID supplyingFacilityId, Integer lastSequenceValue) {
+    this.supplyingFacilityId = supplyingFacilityId;
     this.lastSequenceValue = lastSequenceValue;
   }
 
-  public UUID getFacilityId() {
-    return facilityId;
+  public UUID getSupplyingFacilityId() {
+    return supplyingFacilityId;
   }
 
-  public void setFacilityId(UUID facilityId) {
-    this.facilityId = facilityId;
+  public void setSupplyingFacilityId(UUID supplyingFacilityId) {
+    this.supplyingFacilityId = supplyingFacilityId;
   }
 
   public Integer getLastSequenceValue() {

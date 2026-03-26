@@ -14,8 +14,8 @@ import java.util.UUID;
 public interface FacilityOrderSequenceRepository extends CrudRepository<FacilityOrderSequence, UUID> {
 
   @Lock(LockModeType.PESSIMISTIC_WRITE)
-  @Query("SELECT f FROM FacilityOrderSequence f WHERE f.facilityId = :facilityId")
-  FacilityOrderSequence findByFacilityIdWithLock(@Param("facilityId") UUID facilityId);
+  @Query("SELECT f FROM FacilityOrderSequence f WHERE f.supplyingFacilityId = :supplyingFacilityId")
+  FacilityOrderSequence findByFacilityIdWithLock(@Param("supplyingFacilityId") UUID supplyingFacilityId);
 
   @Transactional
   @Modifying
