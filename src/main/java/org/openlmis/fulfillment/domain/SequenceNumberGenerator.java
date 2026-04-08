@@ -49,7 +49,7 @@ public class SequenceNumberGenerator implements OrderNumberGenerator {
 
     int sequenceValue = getNextSequenceValue(supplyingFacility.getId());
 
-    String newCode = generateOrderCode(sequenceValue);
+    String newCode = String.format("%04d", sequenceValue);
 
     return Year.now().getValue() + "/" + supplyingFacility.getCode() + "/" + newCode;
   }
@@ -92,17 +92,5 @@ public class SequenceNumberGenerator implements OrderNumberGenerator {
           "Facility not found", facilityId).toString());
     }
     return facility;
-  }
-
-  private String generateOrderCode(int sequenceValue) {
-    if (sequenceValue <= 9) {
-      return "000" + sequenceValue;
-    } else if (sequenceValue <= 99) {
-      return "00" + sequenceValue;
-    } else if (sequenceValue <= 999) {
-      return "0" + sequenceValue;
-    } else {
-      return String.valueOf(sequenceValue);
-    }
   }
 }

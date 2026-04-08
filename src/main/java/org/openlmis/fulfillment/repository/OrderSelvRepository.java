@@ -11,16 +11,19 @@ import java.util.UUID;
 public interface OrderSelvRepository extends PagingAndSortingRepository<Order, UUID> {
 
   @Query(value =
-          "SELECT CASE " +
-                  "WHEN (SUBSTRING(o.ordercode, 1, 5)) = 'ORDER' THEN '0000' " +
-                  "ELSE SUBSTRING(o.ordercode, LENGTH(o.ordercode)-3, LENGTH(o.ordercode)) " +
-                  "END " +
-                  "FROM fulfillment.orders o " +
-                  "WHERE o.supplyingfacilityid = :id " +
-                  "ORDER BY o.createddate DESC " +
-                  "LIMIT 1 " +
-                  "FOR UPDATE",
-          nativeQuery = true)
+          "SELECT\n"
+                  + "CASE\n"
+                  + "WHEN (SUBSTRING(o.ordercode, 1, 5)) = 'ORDER' THEN '0000'\n"
+                  + "ELSE SUBSTRING(o.ordercode, LENGTH(o.ordercode)-3, LENGTH(o.ordercode))\n"
+                  + "END\n"
+                  + "FROM\n"
+                  + "fulfillment.orders o\n"
+                  + "WHERE o.supplyingfacilityid = :id\n"
+                  + "ORDER BY\n"
+                  + "o.createddate DESC\n"
+                  + "LIMIT 1\n",
+          nativeQuery = true
+  )
   String findLastOrderCodeOrCreateSequenceCode(@Param("id") UUID supplyingFacilityId);
 
 }
