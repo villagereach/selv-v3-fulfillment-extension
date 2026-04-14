@@ -50,13 +50,16 @@ dependencies {
     implementation 'junit:junit:4.12'
     compile "org.springframework.boot:spring-boot-starter-web"
     compile "org.slf4j:slf4j-ext"
-    annotationProcessor 'org.projectlombok:lombok:1.16.20'
+    compile 'org.projectlombok:lombok:1.18.22'
     compile "org.openlmis:openlmis-fulfillment:9.0.1:exec"
+    annotationProcessor 'org.projectlombok:lombok:1.18.22'
 
     testCompile "org.springframework.boot:spring-boot-starter-test"
     testCompile "junit:junit"
     testCompile "org.powermock:powermock-api-mockito2:2.0.4"
     testCompile "org.powermock:powermock-module-junit4:2.0.4"
+    testCompile 'org.projectlombok:lombok:1.18.22'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.22'
 
 }
 
@@ -200,3 +203,23 @@ processResources {
 
 //+dopisać task gradlowy który przeniesie tego jara do mainProjectPath/extensions?
 //etc/openlmis/extensions
+
+// Usage: gradle generateExtensionMigration [-PmigrationName=name_of_migration]
+//          Defaults to 'migration' as migration name
+// Example: gradle generateExtensionMigration -PmigrationName=create_order_sequence
+//          Will create a file in db/extension folder with name yyyyMMddHHmmssSSS__create_order_sequence.sql.
+task generateExtensionMigration {
+    description 'Creates an empty new file within the src/main/resources/db/extension directory into which extension developers can add new SQL migration code.'
+    doLast {
+        def fileName = project.hasProperty('migrationName') ? migrationName : 'migration'
+        def timestamp = new Date().format('yyyyMMddHHmmssSSS', TimeZone.getTimeZone('GMT'))
+        def fullFileName = "${timestamp}__${fileName}.sql"
+        def migrationDir = new File(sourceSets.main.resources.srcDirs.first(), 'db/extension')
+        migrationDir.mkdirs()
+        def migrationFile = new File(migrationDir, fullFileName)
+        migrationFile << "-- WHEN COMMITTING OR REVIEWING THIS FILE: Make sure that the timestamp in the file name (that serves as a version) is the latest timestamp, and that no new migration have been added in the meanwhile.\n"
+        migrationFile << "-- Adding migrations out of order may cause this migration to never execute or behave in an unexpected way.\n"
+        migrationFile << "-- Migrations should NOT BE EDITED. Add a new migration to apply changes."
+        migrationFile.createNewFile()
+    }
+}

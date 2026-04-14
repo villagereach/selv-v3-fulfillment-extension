@@ -1,7 +1,7 @@
 version: "2"
 services:
   fulfillment-extension:
-    image: openlmis/dev:5.2
+    image: openlmis/dev:10
     volumes:
       - '.:/app'
       - 'gradlecache:/gradle'
