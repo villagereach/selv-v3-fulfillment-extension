@@ -41,10 +41,8 @@ public class SequenceNumberGenerator implements OrderNumberGenerator {
   @Autowired
   private FacilityReferenceDataService facilityReferenceDataService;
 
-
   @Override
   public String generate(Order order) {
-
     FacilityDto supplyingFacility = findSupplyingFacility(order.getSupplyingFacilityId());
 
     int sequenceValue = getNextSequenceValue(supplyingFacility.getId());
@@ -55,30 +53,20 @@ public class SequenceNumberGenerator implements OrderNumberGenerator {
   }
 
   private int getNextSequenceValue(UUID facilityId) {
-    facilityOrderSequenceRepository.lockTable();
-    FacilityOrderSequence sequence = facilityOrderSequenceRepository.findByFacilityIdWithLock(facilityId);
+    String lastOrderCode = orderSelvRepository
+        .findLastOrderCodeOrCreateSequenceCode(facilityId);
 
-    if (sequence == null) {
-      String lastOrderCode = orderSelvRepository.findLastOrderCodeOrCreateSequenceCode(facilityId);
-      int initialValue = (lastOrderCode != null) ? parseOrderCode(lastOrderCode) : 0;
-      FacilityOrderSequence newSequence = new FacilityOrderSequence(facilityId, initialValue);
-      facilityOrderSequenceRepository.save(newSequence);
-      sequence = facilityOrderSequenceRepository.findByFacilityIdWithLock(facilityId);
-    }
+    int initialValue = (lastOrderCode != null) ? parseOrderCode(lastOrderCode) + 1 : 1;
+    int sequenceValue = facilityOrderSequenceRepository
+        .getNextSequenceValue(facilityId, initialValue);
 
-    int newValue = sequence.getLastSequenceValue() + 1;
-    sequence.setLastSequenceValue(newValue);
-    facilityOrderSequenceRepository.save(sequence);
-    return newValue;
+    return sequenceValue;
   }
 
   private int parseOrderCode(String orderCode) {
-    if (orderCode == null) {
-      return 0;
-    }
     try {
       return Integer.parseInt(orderCode);
-    } catch (NumberFormatException e) {
+    } catch (NumberFormatException exc) {
       return 0;
     }
   }
