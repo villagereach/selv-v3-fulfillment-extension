@@ -1,6 +1,6 @@
 Note: Changelog started from version 1.0.2.
 
-1.0.2 / (WIP)
+1.1.0 / (WIP)
 ==================
 
 Bug Fixes:
