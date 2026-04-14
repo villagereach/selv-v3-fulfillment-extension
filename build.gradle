@@ -42,8 +42,8 @@ repositories {
     mavenCentral()
     maven { url "http://jaspersoft.artifactoryonline.com/jaspersoft/third-party-ce-artifacts/" }
     maven { url "http://jasperreports.sourceforge.net/maven2/" }
-    // maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
-    maven { url "https://oss.sonatype.org/#stagingRepositories"}
+    maven { url "https://central.sonatype.com/repository/maven-snapshots/" }
+    maven { url "https://central.sonatype.com/repository/maven-releases/" }
 }
 
 dependencies {
@@ -149,11 +149,11 @@ uploadArchives {
         mavenDeployer {
             beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
-            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+            repository(url: "https://central.sonatype.com/repository/maven-releases/") {
                 authentication(userName: ossrhUsername, password: ossrhPassword)
             }
 
-            snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+            snapshotRepository(url: "https://central.sonatype.com/repository/maven-snapshots/") {
                 authentication(userName: ossrhUsername, password: ossrhPassword)
             }
 
