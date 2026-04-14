@@ -57,10 +57,9 @@ public class SequenceNumberGenerator implements OrderNumberGenerator {
         .findLastOrderCodeOrCreateSequenceCode(facilityId);
 
     int initialValue = (lastOrderCode != null) ? parseOrderCode(lastOrderCode) + 1 : 1;
-    int sequenceValue = facilityOrderSequenceRepository
-        .getNextSequenceValue(facilityId, initialValue);
 
-    return sequenceValue;
+    return facilityOrderSequenceRepository
+        .getNextSequenceValue(facilityId, initialValue);
   }
 
   private int parseOrderCode(String orderCode) {
