@@ -28,7 +28,7 @@ public interface OrderSelvRepository extends PagingAndSortingRepository<Order, U
           "SELECT\n"
                   + "CASE\n"
                   + "WHEN (SUBSTRING(o.ordercode, 1, 5)) = 'ORDER' THEN '0000'\n"
-                  + "ELSE SUBSTRING(o.ordercode, LENGTH(o.ordercode)-3, LENGTH(o.ordercode))\n"
+                  + "ELSE SUBSTRING(o.ordercode FROM '/([^/]+)$')\n"
                   + "END\n"
                   + "FROM\n"
                   + "fulfillment.orders o\n"
