@@ -39,6 +39,7 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 repositories {
+    mavenLocal()
     mavenCentral()
     maven { url "http://jaspersoft.artifactoryonline.com/jaspersoft/third-party-ce-artifacts/" }
     maven { url "http://jasperreports.sourceforge.net/maven2/" }
@@ -46,12 +47,30 @@ repositories {
     maven { url "https://central.sonatype.com/repository/maven-releases/" }
 }
 
+// openlmis-fulfillment version, defined once via OL_FULFILLMENT_VERSION (env or .env).
+def fulfillmentVersion = System.getenv('OL_FULFILLMENT_VERSION')
+if (!fulfillmentVersion?.trim()) {
+    def envFile = file('.env')
+    if (envFile.exists()) {
+        def matcher = (envFile.text =~ /(?m)^\s*OL_FULFILLMENT_VERSION\s*=\s*(\S+)\s*$/)
+        if (matcher.find()) {
+            fulfillmentVersion = matcher.group(1)
+        }
+    }
+}
+if (!fulfillmentVersion?.trim()) {
+    throw new GradleException('OL_FULFILLMENT_VERSION is not set. Create a .env file '
+        + 'with OL_FULFILLMENT_VERSION=9.3.2 (see README Quick Start).')
+}
+
 dependencies {
     implementation 'junit:junit:4.12'
     compile "org.springframework.boot:spring-boot-starter-web"
+    compile "org.springframework.boot:spring-boot-starter-data-jpa"
     compile "org.slf4j:slf4j-ext"
     compile 'org.projectlombok:lombok:1.18.22'
-    compile "org.openlmis:openlmis-fulfillment:9.3.2:exec"
+    // Provisioned into mavenLocal() by build.sh from the fulfillment Docker image
+    compile "org.openlmis:openlmis-fulfillment:${fulfillmentVersion}"
     annotationProcessor 'org.projectlombok:lombok:1.18.22'
 
     testCompile "org.springframework.boot:spring-boot-starter-test"

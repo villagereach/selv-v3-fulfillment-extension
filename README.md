@@ -15,10 +15,16 @@ This example is meant to show an OpenLMIS 3.x Fulfillment Extension Module at wo
  ```shell
  git clone https://github.com/OpenLMIS/openlmis-fulfillmentt.git
  ```
-3. To assemble the outputs of project and create jar file run `docker-compose -f docker-compose.yml run builder`.
-4. Edit configuration file `extensions.properties` from `selv-v3-extensions-config` repository to use your defined extension.
-5. Run builder for `selv-v3-extensions-config` and build image.
-6. Run `selv-v3-ref-distro` using `docker-compose.selv-v3-fulfillment-extension.yml` and check if your changes has been applied.
+3. Create a `.env` file and set the `OL_FULFILLMENT_VERSION` to at least `9.3.2`. The build pulls this version of the
+ `openlmis/fulfillment` Docker image and compiles the extension against it.
+
+ ```shell
+ echo "OL_FULFILLMENT_VERSION=9.3.2" > .env
+ ```
+4. To assemble the outputs of project and create jar file run `docker-compose -f docker-compose.yml run builder`.
+5. Edit configuration file `extensions.properties` from `selv-v3-extensions-config` repository to use your defined extension.
+6. Run builder for `selv-v3-extensions-config` and build image.
+7. Run `selv-v3-ref-distro` using `docker-compose.selv-v3-fulfillment-extension.yml` and check if your changes has been applied.
 
 ## <a name="extensions"></a> Example of extensions usage
 

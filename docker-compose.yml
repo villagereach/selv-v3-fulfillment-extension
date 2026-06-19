@@ -1,10 +1,24 @@
-version: "2"
 services:
+  # Copies the fulfillment jar (image-only, not on Maven) to a shared volume.
+  fulfillment:
+    image: openlmis/fulfillment:${OL_FULFILLMENT_VERSION}
+    entrypoint: ["sh", "-c", "cp /service.jar /artifact/service.jar"]
+    volumes:
+      - 'fulfillment-artifact:/artifact'
+
   builder:
     image: openlmis/dev:10
+    depends_on:
+      fulfillment:
+        condition: service_completed_successfully
     volumes:
       - '.:/app'
+      - 'fulfillment-artifact:/fulfillment'
     command:
       - './build.sh'
     environment:
       GRADLE_OPTS: '-Dorg.gradle.daemon=false'
+      OL_FULFILLMENT_VERSION: ${OL_FULFILLMENT_VERSION}
+
+volumes:
+  fulfillment-artifact:
