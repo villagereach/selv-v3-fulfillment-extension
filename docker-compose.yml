@@ -18,7 +18,6 @@ services:
       - './build.sh'
     environment:
       GRADLE_OPTS: '-Dorg.gradle.daemon=false'
-      OL_FULFILLMENT_VERSION: ${OL_FULFILLMENT_VERSION}
 
 volumes:
   fulfillment-artifact:
