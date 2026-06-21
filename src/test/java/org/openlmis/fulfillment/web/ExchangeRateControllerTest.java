@@ -39,6 +39,7 @@ import org.openlmis.fulfillment.service.ResultDto;
 import org.openlmis.fulfillment.service.referencedata.RightDto;
 import org.openlmis.fulfillment.service.referencedata.UserDto;
 import org.openlmis.fulfillment.service.referencedata.UserReferenceDataService;
+import org.openlmis.fulfillment.util.AuthenticationException;
 import org.openlmis.fulfillment.util.AuthenticationHelper;
 import org.openlmis.fulfillment.web.util.ExchangeRateDto;
 import org.springframework.http.HttpStatus;
@@ -107,6 +108,19 @@ public class ExchangeRateControllerTest {
     Throwable thrown = catchThrowable(() -> controller.create(body));
 
     assertThat(thrown).isInstanceOf(ValidationException.class);
+    verify(exchangeRateRepository, never()).insert(any(), any());
+  }
+
+  @Test
+  public void postShouldRejectWhenManageRightNotProvisioned() {
+    when(authenticationHelper.getRight("EXCHANGE_RATE_MANAGE"))
+        .thenThrow(new AuthenticationException("right not found"));
+    ExchangeRateDto body = new ExchangeRateDto();
+    body.setRate(new BigDecimal(RATE));
+
+    Throwable thrown = catchThrowable(() -> controller.create(body));
+
+    assertThat(thrown).isInstanceOf(MissingPermissionException.class);
     verify(exchangeRateRepository, never()).insert(any(), any());
   }
 

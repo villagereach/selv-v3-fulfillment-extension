@@ -58,13 +58,14 @@ public class ExchangeRateOrderCreatePostProcessor implements OrderCreatePostProc
       return; // no rate yet — snapshot stays empty (nullable)
     }
 
-    // The passed order is detached (createOrder flushed+cleared) and may hold the default
-    // processor's transient status changes; re-load the managed row and touch only extraData.
+    // The passed order is detached (createOrder flushed+cleared); re-load the managed row, update
+    // extraData and explicitly re-persist (the .orElse fallback would otherwise be a no-op).
     Order managed = orderRepository.findById(order.getId()).orElse(order);
     Map<String, String> extraData = new HashMap<>(managed.getExtraData());
     extraData.put(EXCHANGE_RATE_VALUE, current.getRate().toPlainString());
     extraData.put(EXCHANGE_RATE_ID, current.getId().toString());
     extraData.put(EXCHANGE_RATE_CAPTURED_AT, ZonedDateTime.now(ZoneOffset.UTC).toString());
     managed.setExtraData(extraData);
+    orderRepository.save(managed);
   }
 }

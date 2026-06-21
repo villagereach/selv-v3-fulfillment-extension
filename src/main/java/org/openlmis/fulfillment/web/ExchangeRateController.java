@@ -27,6 +27,7 @@ import org.openlmis.fulfillment.service.ResultDto;
 import org.openlmis.fulfillment.service.referencedata.RightDto;
 import org.openlmis.fulfillment.service.referencedata.UserDto;
 import org.openlmis.fulfillment.service.referencedata.UserReferenceDataService;
+import org.openlmis.fulfillment.util.AuthenticationException;
 import org.openlmis.fulfillment.util.AuthenticationHelper;
 import org.openlmis.fulfillment.web.util.ExchangeRateDto;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,7 +48,9 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 public class ExchangeRateController extends BaseController {
 
   static final String EXCHANGE_RATE_MANAGE = "EXCHANGE_RATE_MANAGE";
-  static final String ERROR_RATE_INVALID = "fulfillmentExtension.exchangeRate.rate.invalid";
+  // Literal message (not a key): an extension cannot contribute to the core `classpath:messages`
+  // bundle (single basename, no merge), and core renders unknown keys verbatim anyway.
+  static final String ERROR_RATE_INVALID = "Exchange rate must be a positive number";
 
   @Autowired
   private ExchangeRateRepository exchangeRateRepository;
@@ -106,12 +109,19 @@ public class ExchangeRateController extends BaseController {
     return resolveAuthor(exchangeRateRepository.insert(exchangeRateDto.getRate(), createdById));
   }
 
+  @SuppressWarnings("PMD.PreserveStackTrace") // intentional translation to a 403, original is noise
   private void checkManageRight() {
     UserDto user = authenticationHelper.getCurrentUser();
     if (user == null) {
       throw new MissingPermissionException(EXCHANGE_RATE_MANAGE);
     }
-    RightDto right = authenticationHelper.getRight(EXCHANGE_RATE_MANAGE);
+    RightDto right;
+    try {
+      right = authenticationHelper.getRight(EXCHANGE_RATE_MANAGE);
+    } catch (AuthenticationException ex) {
+      // Right not provisioned in referencedata — treat as missing permission (403), not a 500.
+      throw new MissingPermissionException(EXCHANGE_RATE_MANAGE);
+    }
     ResultDto<Boolean> result = userReferenceDataService
         .hasRight(user.getId(), right.getId(), null, null, null);
     if (result == null || !Boolean.TRUE.equals(result.getResult())) {

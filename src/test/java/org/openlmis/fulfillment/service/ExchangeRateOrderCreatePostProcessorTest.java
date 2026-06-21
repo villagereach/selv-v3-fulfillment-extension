@@ -89,6 +89,7 @@ public class ExchangeRateOrderCreatePostProcessorTest {
     assertThat(extraData).containsEntry("exchangeRateValue", "64.250000");
     assertThat(extraData).containsEntry("exchangeRateId", rateId.toString());
     assertThat(extraData.get("exchangeRateCapturedAt")).isNotBlank();
+    verify(orderRepository).save(order);
   }
 
   @Test
