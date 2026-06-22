@@ -87,10 +87,10 @@ public class ExchangeRateOrderCreatePostProcessorTest {
 
     processor.process(order);
 
-    Map<String, String> extraData = order.getExtraData();
-    assertThat(extraData).containsEntry("exchangeRateValue", "64.250000");
-    assertThat(extraData).containsEntry("exchangeRateId", rateId.toString());
-    assertThat(extraData.get("exchangeRateCapturedAt")).isNotBlank();
+    String snapshot = order.getExtraData().get("exchangeRate");
+    assertThat(snapshot).contains("\"rate\":64.250000");
+    assertThat(snapshot).contains("\"exchangeRateId\":\"" + rateId + "\"");
+    assertThat(snapshot).contains("\"capturedAt\":");
     verify(orderRepository).save(order);
   }
 
@@ -100,7 +100,7 @@ public class ExchangeRateOrderCreatePostProcessorTest {
 
     processor.process(order);
 
-    assertThat(order.getExtraData()).doesNotContainKey("exchangeRateValue");
+    assertThat(order.getExtraData()).doesNotContainKey("exchangeRate");
     verify(defaultOrderCreatePostProcessor).process(order);
     verify(orderRepository, never()).findById(any());
   }
@@ -117,7 +117,7 @@ public class ExchangeRateOrderCreatePostProcessorTest {
     processor.process(order);
 
     assertThat(order.getExtraData()).containsEntry("foo", "bar");
-    assertThat(order.getExtraData()).containsEntry("exchangeRateValue", "10.000000");
+    assertThat(order.getExtraData().get("exchangeRate")).contains("\"rate\":10.000000");
   }
 
   private ExchangeRate rate(String value) {

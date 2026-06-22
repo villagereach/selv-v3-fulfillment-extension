@@ -15,9 +15,12 @@
 
 package org.openlmis.fulfillment.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import org.openlmis.fulfillment.domain.ExchangeRate;
 import org.openlmis.fulfillment.domain.Order;
@@ -29,15 +32,15 @@ import org.springframework.stereotype.Component;
 
 /**
  * After an order is created: delegates to the core default processor (FTP, e-mail), then snapshots
- * the current USD-MZM rate onto {@code Order.extraData} as flat keys ({@code exchangeRateValue},
- * {@code exchangeRateId}, {@code exchangeRateCapturedAt}) for the PoD report.
+ * the current USD-MZM rate onto {@code Order.extraData} under the {@code exchangeRate} key as a
+ * JSON object ({@code rate}, {@code exchangeRateId}, {@code capturedAt}) for the PoD report.
  */
 @Component("ExchangeRateOrderCreatePostProcessor")
 public class ExchangeRateOrderCreatePostProcessor implements OrderCreatePostProcessor {
 
-  static final String EXCHANGE_RATE_VALUE = "exchangeRateValue";
-  static final String EXCHANGE_RATE_ID = "exchangeRateId";
-  static final String EXCHANGE_RATE_CAPTURED_AT = "exchangeRateCapturedAt";
+  static final String EXCHANGE_RATE = "exchangeRate";
+
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Autowired
   private DefaultOrderCreatePostProcessor defaultOrderCreatePostProcessor;
@@ -58,14 +61,25 @@ public class ExchangeRateOrderCreatePostProcessor implements OrderCreatePostProc
       return; // no rate yet — snapshot stays empty (nullable)
     }
 
+    Map<String, Object> snapshot = new LinkedHashMap<>();
+    snapshot.put("rate", current.getRate());
+    snapshot.put("exchangeRateId", current.getId().toString());
+    snapshot.put("capturedAt", ZonedDateTime.now(ZoneOffset.UTC).toString());
+
     // The passed order is detached (createOrder flushed+cleared); re-load the managed row, update
     // extraData and explicitly re-persist (the .orElse fallback would otherwise be a no-op).
     Order managed = orderRepository.findById(order.getId()).orElse(order);
     Map<String, String> extraData = new HashMap<>(managed.getExtraData());
-    extraData.put(EXCHANGE_RATE_VALUE, current.getRate().toPlainString());
-    extraData.put(EXCHANGE_RATE_ID, current.getId().toString());
-    extraData.put(EXCHANGE_RATE_CAPTURED_AT, ZonedDateTime.now(ZoneOffset.UTC).toString());
+    extraData.put(EXCHANGE_RATE, writeSnapshot(snapshot));
     managed.setExtraData(extraData);
     orderRepository.save(managed);
+  }
+
+  private String writeSnapshot(Map<String, Object> snapshot) {
+    try {
+      return objectMapper.writeValueAsString(snapshot);
+    } catch (JsonProcessingException ex) {
+      throw new IllegalStateException("Unable to serialize exchange rate snapshot", ex);
+    }
   }
 }
