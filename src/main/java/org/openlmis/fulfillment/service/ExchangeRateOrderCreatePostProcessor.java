@@ -19,11 +19,11 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import org.openlmis.fulfillment.domain.ExchangeRate;
 import org.openlmis.fulfillment.domain.Order;
 import org.openlmis.fulfillment.extension.point.OrderCreatePostProcessor;
 import org.openlmis.fulfillment.repository.ExchangeRateRepository;
 import org.openlmis.fulfillment.repository.OrderRepository;
-import org.openlmis.fulfillment.web.util.ExchangeRateDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -53,7 +53,7 @@ public class ExchangeRateOrderCreatePostProcessor implements OrderCreatePostProc
     // Core default behaviour first (FTP, e-mail).
     defaultOrderCreatePostProcessor.process(order);
 
-    ExchangeRateDto current = exchangeRateRepository.findCurrent();
+    ExchangeRate current = exchangeRateRepository.findFirstByOrderByValidFromDescIdDesc();
     if (current == null) {
       return; // no rate yet — snapshot stays empty (nullable)
     }

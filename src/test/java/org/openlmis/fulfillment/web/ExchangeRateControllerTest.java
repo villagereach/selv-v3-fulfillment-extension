@@ -34,6 +34,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.openlmis.fulfillment.domain.ExchangeRate;
 import org.openlmis.fulfillment.repository.ExchangeRateRepository;
 import org.openlmis.fulfillment.service.ResultDto;
 import org.openlmis.fulfillment.service.referencedata.RightDto;
@@ -96,7 +97,7 @@ public class ExchangeRateControllerTest {
     Throwable thrown = catchThrowable(() -> controller.create(body));
 
     assertThat(thrown).isInstanceOf(MissingPermissionException.class);
-    verify(exchangeRateRepository, never()).insert(any(), any());
+    verify(exchangeRateRepository, never()).save(any());
   }
 
   @Test
@@ -108,7 +109,7 @@ public class ExchangeRateControllerTest {
     Throwable thrown = catchThrowable(() -> controller.create(body));
 
     assertThat(thrown).isInstanceOf(ValidationException.class);
-    verify(exchangeRateRepository, never()).insert(any(), any());
+    verify(exchangeRateRepository, never()).save(any());
   }
 
   @Test
@@ -121,7 +122,7 @@ public class ExchangeRateControllerTest {
     Throwable thrown = catchThrowable(() -> controller.create(body));
 
     assertThat(thrown).isInstanceOf(MissingPermissionException.class);
-    verify(exchangeRateRepository, never()).insert(any(), any());
+    verify(exchangeRateRepository, never()).save(any());
   }
 
   @Test
@@ -129,18 +130,19 @@ public class ExchangeRateControllerTest {
     grantManageRight(true);
     ExchangeRateDto body = new ExchangeRateDto();
     body.setRate(new BigDecimal(RATE));
-    when(exchangeRateRepository.insert(new BigDecimal(RATE), userId))
-        .thenReturn(rateDto(new BigDecimal(RATE), userId));
+    when(exchangeRateRepository.save(any(ExchangeRate.class)))
+        .thenReturn(exchangeRate(new BigDecimal(RATE), userId));
 
     ExchangeRateDto result = controller.create(body);
 
-    verify(exchangeRateRepository).insert(new BigDecimal(RATE), userId);
+    verify(exchangeRateRepository).save(any(ExchangeRate.class));
     assertThat(result.getRate()).isEqualByComparingTo(RATE);
   }
 
   @Test
   public void getCurrentShouldReturnRateWithResolvedAuthorName() {
-    when(exchangeRateRepository.findCurrent()).thenReturn(rateDto(new BigDecimal(RATE), userId));
+    when(exchangeRateRepository.findFirstByOrderByValidFromDescIdDesc())
+        .thenReturn(exchangeRate(new BigDecimal(RATE), userId));
 
     ResponseEntity<ExchangeRateDto> response = controller.getCurrent();
 
@@ -150,7 +152,7 @@ public class ExchangeRateControllerTest {
 
   @Test
   public void getCurrentShouldReturnNoContentWhenNoRate() {
-    when(exchangeRateRepository.findCurrent()).thenReturn(null);
+    when(exchangeRateRepository.findFirstByOrderByValidFromDescIdDesc()).thenReturn(null);
 
     ResponseEntity<ExchangeRateDto> response = controller.getCurrent();
 
@@ -159,9 +161,9 @@ public class ExchangeRateControllerTest {
 
   @Test
   public void getHistoryShouldReturnAllRatesWithResolvedNames() {
-    when(exchangeRateRepository.findHistory())
-        .thenReturn(Arrays.asList(rateDto(new BigDecimal(RATE), userId),
-            rateDto(new BigDecimal("63.50"), userId)));
+    when(exchangeRateRepository.findAllByOrderByValidFromDescIdDesc())
+        .thenReturn(Arrays.asList(exchangeRate(new BigDecimal(RATE), userId),
+            exchangeRate(new BigDecimal("63.50"), userId)));
     UserDto author = new UserDto();
     author.setId(userId);
     author.setFirstName("Ada");
@@ -174,7 +176,9 @@ public class ExchangeRateControllerTest {
     assertThat(history.get(0).getCreatedByName()).isEqualTo("Ada Macamo");
   }
 
-  private ExchangeRateDto rateDto(BigDecimal rate, UUID createdById) {
-    return new ExchangeRateDto(UUID.randomUUID(), rate, ZonedDateTime.now(), createdById, null);
+  private ExchangeRate exchangeRate(BigDecimal rate, UUID createdById) {
+    ExchangeRate exchangeRate = new ExchangeRate(rate, ZonedDateTime.now(), createdById);
+    exchangeRate.setId(UUID.randomUUID());
+    return exchangeRate;
   }
 }

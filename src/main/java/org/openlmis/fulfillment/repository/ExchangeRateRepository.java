@@ -15,98 +15,21 @@
 
 package org.openlmis.fulfillment.repository;
 
-import java.math.BigDecimal;
-import java.sql.Timestamp;
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.persistence.Query;
-import org.openlmis.fulfillment.web.util.ExchangeRateDto;
-import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
+import org.openlmis.fulfillment.domain.ExchangeRate;
+import org.springframework.data.repository.PagingAndSortingRepository;
 
-/**
- * Native-SQL access to {@code exchange_rates} (no JPA entity, cf. FacilityOrderSequenceRepository).
- * Current rate = row with the greatest {@code valid_from}.
- */
-@Repository
-public class ExchangeRateRepository {
-
-  // CAST uuid columns to varchar: native queries have no Hibernate dialect mapping for JDBC type
-  // 1111 (uuid); parsed back via UUID.fromString in map().
-  private static final String SELECT =
-      "SELECT CAST(id AS varchar) AS id, rate, valid_from, "
-          + "CAST(created_by AS varchar) AS created_by FROM fulfillment.exchange_rates";
-  private static final String ORDER = " ORDER BY valid_from DESC, id DESC";
-
-  @PersistenceContext
-  private EntityManager entityManager;
+public interface ExchangeRateRepository
+    extends PagingAndSortingRepository<ExchangeRate, UUID> {
 
   /**
-   * Returns the currently active rate (greatest valid_from), or {@code null} if none exists.
+   * Returns the currently active rate (greatest valid_from, tie-broken by id), or null if none.
    */
-  public ExchangeRateDto findCurrent() {
-    List<?> rows = entityManager.createNativeQuery(SELECT + ORDER).setMaxResults(1).getResultList();
-    return rows.isEmpty() ? null : map((Object[]) rows.get(0));
-  }
+  ExchangeRate findFirstByOrderByValidFromDescIdDesc();
 
   /**
    * Returns the full rate history, newest first.
    */
-  public List<ExchangeRateDto> findHistory() {
-    List<?> rows = entityManager.createNativeQuery(SELECT + ORDER).getResultList();
-    List<ExchangeRateDto> result = new ArrayList<>(rows.size());
-    for (Object row : rows) {
-      result.add(map((Object[]) row));
-    }
-    return result;
-  }
-
-  /**
-   * Inserts a new immutable rate with server-assigned {@code valid_from = now()}; it becomes the
-   * current rate. Returns the inserted row.
-   */
-  @Transactional
-  public ExchangeRateDto insert(BigDecimal rate, UUID createdById) {
-    // INSERT ... RETURNING fetches the row in one round-trip (cf. FacilityOrderSequenceRepository).
-    Query query = entityManager.createNativeQuery(
-        "INSERT INTO fulfillment.exchange_rates (id, rate, valid_from, created_by) "
-            + "VALUES (?1, ?2, now(), ?3) "
-            + "RETURNING CAST(id AS varchar) AS id, rate, valid_from, "
-            + "CAST(created_by AS varchar) AS created_by");
-    query.setParameter(1, UUID.randomUUID());
-    query.setParameter(2, rate);
-    query.setParameter(3, createdById);
-    return map((Object[]) query.getSingleResult());
-  }
-
-  private ExchangeRateDto map(Object[] row) {
-    UUID id = UUID.fromString((String) row[0]);
-    BigDecimal rate = (BigDecimal) row[1];
-    ZonedDateTime validFrom = toZonedDateTime(row[2]);
-    UUID createdBy = row[3] == null ? null : UUID.fromString((String) row[3]);
-    return new ExchangeRateDto(id, rate, validFrom, createdBy, null);
-  }
-
-  private ZonedDateTime toZonedDateTime(Object value) {
-    if (value == null) {
-      return null;
-    }
-    if (value instanceof Timestamp) {
-      return ((Timestamp) value).toInstant().atZone(ZoneOffset.UTC);
-    }
-    if (value instanceof OffsetDateTime) {
-      return ((OffsetDateTime) value).toZonedDateTime();
-    }
-    if (value instanceof Instant) {
-      return ((Instant) value).atZone(ZoneOffset.UTC);
-    }
-    throw new IllegalStateException("Unsupported valid_from type: " + value.getClass());
-  }
+  List<ExchangeRate> findAllByOrderByValidFromDescIdDesc();
 }

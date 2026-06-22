@@ -36,10 +36,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.openlmis.fulfillment.OrderDataBuilder;
+import org.openlmis.fulfillment.domain.ExchangeRate;
 import org.openlmis.fulfillment.domain.Order;
 import org.openlmis.fulfillment.repository.ExchangeRateRepository;
 import org.openlmis.fulfillment.repository.OrderRepository;
-import org.openlmis.fulfillment.web.util.ExchangeRateDto;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ExchangeRateOrderCreatePostProcessorTest {
@@ -65,7 +65,8 @@ public class ExchangeRateOrderCreatePostProcessorTest {
 
   @Test
   public void shouldDelegateToDefaultProcessorBeforeSnapshotting() {
-    when(exchangeRateRepository.findCurrent()).thenReturn(rate("64.250000"));
+    when(exchangeRateRepository.findFirstByOrderByValidFromDescIdDesc())
+        .thenReturn(rate("64.250000"));
     when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
 
     processor.process(order);
@@ -78,9 +79,10 @@ public class ExchangeRateOrderCreatePostProcessorTest {
   @Test
   public void shouldSnapshotCurrentRateIntoExtraData() {
     UUID rateId = UUID.randomUUID();
-    when(exchangeRateRepository.findCurrent())
-        .thenReturn(new ExchangeRateDto(rateId, new BigDecimal("64.250000"),
-            ZonedDateTime.now(), UUID.randomUUID(), null));
+    ExchangeRate current = new ExchangeRate(new BigDecimal("64.250000"),
+        ZonedDateTime.now(), UUID.randomUUID());
+    current.setId(rateId);
+    when(exchangeRateRepository.findFirstByOrderByValidFromDescIdDesc()).thenReturn(current);
     when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
 
     processor.process(order);
@@ -94,7 +96,7 @@ public class ExchangeRateOrderCreatePostProcessorTest {
 
   @Test
   public void shouldNotSnapshotWhenNoCurrentRate() {
-    when(exchangeRateRepository.findCurrent()).thenReturn(null);
+    when(exchangeRateRepository.findFirstByOrderByValidFromDescIdDesc()).thenReturn(null);
 
     processor.process(order);
 
@@ -108,7 +110,8 @@ public class ExchangeRateOrderCreatePostProcessorTest {
     Map<String, String> existing = new HashMap<>();
     existing.put("foo", "bar");
     order.setExtraData(existing);
-    when(exchangeRateRepository.findCurrent()).thenReturn(rate("10.000000"));
+    when(exchangeRateRepository.findFirstByOrderByValidFromDescIdDesc())
+        .thenReturn(rate("10.000000"));
     when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
 
     processor.process(order);
@@ -117,8 +120,10 @@ public class ExchangeRateOrderCreatePostProcessorTest {
     assertThat(order.getExtraData()).containsEntry("exchangeRateValue", "10.000000");
   }
 
-  private ExchangeRateDto rate(String value) {
-    return new ExchangeRateDto(UUID.randomUUID(), new BigDecimal(value),
-        ZonedDateTime.now(), UUID.randomUUID(), null);
+  private ExchangeRate rate(String value) {
+    ExchangeRate exchangeRate = new ExchangeRate(new BigDecimal(value),
+        ZonedDateTime.now(), UUID.randomUUID());
+    exchangeRate.setId(UUID.randomUUID());
+    return exchangeRate;
   }
 }

@@ -15,6 +15,8 @@
 
 package org.openlmis.fulfillment.web;
 
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +24,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.openlmis.fulfillment.domain.ExchangeRate;
 import org.openlmis.fulfillment.repository.ExchangeRateRepository;
 import org.openlmis.fulfillment.service.ResultDto;
 import org.openlmis.fulfillment.service.referencedata.RightDto;
@@ -67,11 +70,11 @@ public class ExchangeRateController extends BaseController {
   @GetMapping("/exchangeRates/current")
   @ResponseBody
   public ResponseEntity<ExchangeRateDto> getCurrent() {
-    ExchangeRateDto current = exchangeRateRepository.findCurrent();
+    ExchangeRate current = exchangeRateRepository.findFirstByOrderByValidFromDescIdDesc();
     if (current == null) {
       return ResponseEntity.noContent().build();
     }
-    return ResponseEntity.ok(resolveAuthor(current));
+    return ResponseEntity.ok(resolveAuthor(toDto(current)));
   }
 
   /**
@@ -80,7 +83,8 @@ public class ExchangeRateController extends BaseController {
   @GetMapping("/exchangeRates")
   @ResponseBody
   public List<ExchangeRateDto> getHistory() {
-    List<ExchangeRateDto> history = exchangeRateRepository.findHistory();
+    List<ExchangeRateDto> history = exchangeRateRepository.findAllByOrderByValidFromDescIdDesc()
+        .stream().map(this::toDto).collect(Collectors.toList());
     Set<UUID> authorIds = history.stream()
         .map(ExchangeRateDto::getCreatedById)
         .filter(Objects::nonNull)
@@ -106,7 +110,9 @@ public class ExchangeRateController extends BaseController {
       throw new ValidationException(ERROR_RATE_INVALID);
     }
     UUID createdById = authenticationHelper.getCurrentUser().getId();
-    return resolveAuthor(exchangeRateRepository.insert(exchangeRateDto.getRate(), createdById));
+    ExchangeRate toSave = new ExchangeRate(exchangeRateDto.getRate(),
+        ZonedDateTime.now(ZoneOffset.UTC), createdById);
+    return resolveAuthor(toDto(exchangeRateRepository.save(toSave)));
   }
 
   @SuppressWarnings("PMD.PreserveStackTrace") // intentional translation to a 403, original is noise
@@ -127,6 +133,11 @@ public class ExchangeRateController extends BaseController {
     if (result == null || !Boolean.TRUE.equals(result.getResult())) {
       throw new MissingPermissionException(EXCHANGE_RATE_MANAGE);
     }
+  }
+
+  private ExchangeRateDto toDto(ExchangeRate exchangeRate) {
+    return new ExchangeRateDto(exchangeRate.getId(), exchangeRate.getRate(),
+        exchangeRate.getValidFrom(), exchangeRate.getCreatedById(), null);
   }
 
   private ExchangeRateDto resolveAuthor(ExchangeRateDto dto) {
