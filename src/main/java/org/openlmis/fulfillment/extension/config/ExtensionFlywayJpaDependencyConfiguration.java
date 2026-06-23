@@ -24,10 +24,12 @@ import org.springframework.context.annotation.Configuration;
  * before Hibernate validates the schema. Core only orders the extension initializer after the core
  * {@code flywayInitializer}, not before the entity manager factory, so without this the factory can
  * be built first and validation fails with a missing table. Mirrors Spring Boot's own
- * {@code FlywayEntityManagerFactoryDependsOnPostProcessor}, which does the same for the core Flyway.
+ * {@code FlywayEntityManagerFactoryDependsOnPostProcessor}, which does the same for the
+ * core Flyway.
  */
 @Configuration(proxyBeanMethods = false)
-public class ExtensionFlywayJpaDependencyConfiguration extends EntityManagerFactoryDependsOnPostProcessor {
+public class ExtensionFlywayJpaDependencyConfiguration
+    extends EntityManagerFactoryDependsOnPostProcessor {
 
   /**
    * Declares the entity manager factory's dependency on the extension Flyway initializer bean.
