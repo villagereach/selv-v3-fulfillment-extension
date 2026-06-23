@@ -19,14 +19,12 @@ import org.springframework.boot.autoconfigure.data.jpa.EntityManagerFactoryDepen
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Ensures the JPA {@code entityManagerFactory} (and therefore Hibernate schema validation) is
- * created only AFTER the extension Flyway migrations have run, so entities backed by extension
- * migrations (e.g. {@code exchange_rates}) already exist when Hibernate validates the schema.
- *
- * <p>Core only orders {@code extensionFlywayMigrationInitializer} after the core
- * {@code flywayInitializer}; it does not order it before the entity manager factory, so without
- * this post-processor the factory may be built first and validation fails with a missing table.
- * This mirrors Spring Boot's own {@code FlywayInitializerJpaDependencyConfiguration}.
+ * Makes the JPA {@code entityManagerFactory} depend on {@code extensionFlywayMigrationInitializer}
+ * so the extension Flyway migrations (which create tables such as {@code exchange_rates}) run
+ * before Hibernate validates the schema. Core only orders the extension initializer after the core
+ * {@code flywayInitializer}, not before the entity manager factory, so without this the factory can
+ * be built first and validation fails with a missing table. Mirrors Spring Boot's own
+ * {@code FlywayEntityManagerFactoryDependsOnPostProcessor}, which does the same for the core Flyway.
  */
 @Configuration(proxyBeanMethods = false)
 public class ExtensionFlywayJpaDependencyConfiguration extends EntityManagerFactoryDependsOnPostProcessor {
