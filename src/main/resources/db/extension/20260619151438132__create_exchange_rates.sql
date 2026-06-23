@@ -6,9 +6,9 @@
 CREATE TABLE IF NOT EXISTS fulfillment.exchange_rates (
     id          UUID PRIMARY KEY,
     rate        NUMERIC(12,6) NOT NULL CHECK (rate > 0),
-    valid_from  TIMESTAMP WITH TIME ZONE NOT NULL,
-    created_by  UUID
+    validfrom   TIMESTAMP WITH TIME ZONE NOT NULL,
+    createdby   UUID
 );
 
 CREATE INDEX IF NOT EXISTS ix_exchange_rates_valid_from
-    ON fulfillment.exchange_rates (valid_from DESC);
+    ON fulfillment.exchange_rates (validfrom DESC);
