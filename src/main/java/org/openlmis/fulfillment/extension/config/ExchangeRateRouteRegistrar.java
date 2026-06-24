@@ -27,8 +27,9 @@ import org.springframework.web.client.RestTemplate;
 
 /**
  * Registers the SELV exchange-rate endpoints with Consul on startup so the gateway forwards
- * {@code /api/exchangeRates} and {@code /api/exchangeRates/current} to this service. Mirrors the
- * route-registrar pattern from the SELV stockmanagement extension.
+ * {@code /api/exchangeRates} and {@code /api/exchangeRates/current} to this service. On
+ * {@code ApplicationReadyEvent} it writes the {@code resources/api/...} Consul KV entries that
+ * the gateway's consul-template reads to build its upstream routes.
  */
 @Component
 public class ExchangeRateRouteRegistrar {
