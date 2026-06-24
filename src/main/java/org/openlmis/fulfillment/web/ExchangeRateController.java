@@ -15,6 +15,7 @@
 
 package org.openlmis.fulfillment.web;
 
+import java.math.BigDecimal;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
@@ -54,6 +55,9 @@ public class ExchangeRateController extends BaseController {
   // Literal message (not a key): an extension cannot contribute to the core `classpath:messages`
   // bundle (single basename, no merge), and core renders unknown keys verbatim anyway.
   static final String ERROR_RATE_INVALID = "Exchange rate must be a positive number";
+  static final String ERROR_RATE_TOO_LARGE = "Exchange rate is too large";
+  // Upper bound for the NUMERIC(12,6) rate column.
+  static final BigDecimal MAX_RATE = new BigDecimal("999999.999999");
 
   @Autowired
   private ExchangeRateRepository exchangeRateRepository;
@@ -108,6 +112,9 @@ public class ExchangeRateController extends BaseController {
     checkManageRight();
     if (exchangeRateDto.getRate() == null || exchangeRateDto.getRate().signum() <= 0) {
       throw new ValidationException(ERROR_RATE_INVALID);
+    }
+    if (exchangeRateDto.getRate().compareTo(MAX_RATE) > 0) {
+      throw new ValidationException(ERROR_RATE_TOO_LARGE);
     }
     UUID createdById = authenticationHelper.getCurrentUser().getId();
     ExchangeRate toSave = new ExchangeRate(exchangeRateDto.getRate(),

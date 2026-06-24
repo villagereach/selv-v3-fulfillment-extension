@@ -113,6 +113,18 @@ public class ExchangeRateControllerTest {
   }
 
   @Test
+  public void postShouldRejectRateExceedingMaximum() {
+    grantManageRight(true);
+    ExchangeRateDto body = new ExchangeRateDto();
+    body.setRate(new BigDecimal("1000000"));
+
+    Throwable thrown = catchThrowable(() -> controller.create(body));
+
+    assertThat(thrown).isInstanceOf(ValidationException.class);
+    verify(exchangeRateRepository, never()).save(any());
+  }
+
+  @Test
   public void postShouldRejectWhenManageRightNotProvisioned() {
     when(authenticationHelper.getRight("EXCHANGE_RATE_MANAGE"))
         .thenThrow(new AuthenticationException("right not found"));
