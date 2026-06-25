@@ -29,7 +29,7 @@ import org.hibernate.annotations.Type;
 
 /**
  * SELV USD-MZM exchange rate. Immutable rows; the row with the greatest {@code validFrom} is the
- * currently active rate. Maps the existing {@code fulfillment.exchange_rates} table (no migration).
+ * currently active rate. Maps the {@code fulfillment.exchange_rates} table.
  */
 @Entity
 @Table(name = "exchange_rates", schema = "fulfillment")
