@@ -26,15 +26,15 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 /**
- * Registers the SELV exchange-rate endpoints with Consul on startup so the gateway forwards
- * {@code /api/exchangeRates} and {@code /api/exchangeRates/current} to this service. On
- * {@code ApplicationReadyEvent} it writes the {@code resources/api/...} Consul KV entries that
- * the gateway's consul-template reads to build its upstream routes.
+ * Registers the SELV extension endpoints with Consul on startup so the gateway forwards their
+ * {@code /api/...} paths to this service. On {@code ApplicationReadyEvent} it writes the
+ * {@code resources/api/...} Consul KV entries that the gateway's consul-template reads to build
+ * its upstream routes. Each feature lists its endpoint paths in {@code CONSUL_KV_KEYS}.
  */
 @Component
-public class ExchangeRateRouteRegistrar {
+public class ConsulRouteRegistrar {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(ExchangeRateRouteRegistrar.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ConsulRouteRegistrar.class);
 
   private static final String SERVICE_NAME = "fulfillment";
   private static final String[] CONSUL_KV_KEYS = {
@@ -54,9 +54,9 @@ public class ExchangeRateRouteRegistrar {
   long retryBackoffMs = 5000L;
 
   /**
-   * Publishes the exchange-rate endpoints' consul routing entries so nginx forwards
-   * {@code /api/exchangeRates} and {@code /api/exchangeRates/current} to this service. Each entry
-   * retries on failure; exhausted retries are logged but never block service startup.
+   * Publishes each extension endpoint's consul routing entry so nginx forwards its
+   * {@code /api/...} path to this service. Each entry retries on failure; exhausted retries are
+   * logged but never block service startup.
    */
   @EventListener(ApplicationReadyEvent.class)
   public void registerRoutes() {

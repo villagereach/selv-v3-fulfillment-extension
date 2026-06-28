@@ -39,13 +39,13 @@ import org.springframework.web.client.RestTemplate;
 
 @RunWith(MockitoJUnitRunner.class)
 @SuppressWarnings({"unchecked", "rawtypes"})
-public class ExchangeRateRouteRegistrarTest {
+public class ConsulRouteRegistrarTest {
 
   @Mock
   private RestTemplate restTemplate;
 
   @InjectMocks
-  private ExchangeRateRouteRegistrar registrar;
+  private ConsulRouteRegistrar registrar;
 
   @Before
   public void setUp() {
