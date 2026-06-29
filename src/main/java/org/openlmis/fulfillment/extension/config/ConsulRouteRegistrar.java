@@ -39,7 +39,8 @@ public class ConsulRouteRegistrar {
   private static final String SERVICE_NAME = "fulfillment";
   private static final String[] CONSUL_KV_KEYS = {
       "resources/api/exchangeRates",
-      "resources/api/exchangeRates/current"
+      "resources/api/exchangeRates/current",
+      "resources/api/extension/shipments/withAdditionalInfo"
   };
 
   @Value("${CONSUL_HOST:consul}")
