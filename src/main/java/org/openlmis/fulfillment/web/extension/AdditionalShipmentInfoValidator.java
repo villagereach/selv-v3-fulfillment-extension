@@ -16,6 +16,7 @@
 package org.openlmis.fulfillment.web.extension;
 
 import java.util.Map;
+import org.apache.commons.lang3.StringUtils;
 import org.openlmis.fulfillment.web.ValidationException;
 import org.springframework.stereotype.Component;
 
@@ -77,30 +78,24 @@ public class AdditionalShipmentInfoValidator {
   private void validateCount(String value, String field) {
     // Regex (not Integer.parseInt) so Unicode digits, signs, decimals and surrounding whitespace
     // are all rejected, and the stored value is guaranteed to equal the validated one.
-    if (isProvided(value) && !value.matches(NON_NEGATIVE_INTEGER_PATTERN)) {
+    if (StringUtils.isNotEmpty(value) && !value.matches(NON_NEGATIVE_INTEGER_PATTERN)) {
       throw new ValidationException(message(field, ERROR_COUNT_INVALID));
     }
   }
 
   private void validateLength(String value, String field) {
-    if (isProvided(value) && value.length() > MAX_TEXT_LENGTH) {
+    if (StringUtils.isNotEmpty(value) && value.length() > MAX_TEXT_LENGTH) {
       throw new ValidationException(message(field, ERROR_TEXT_TOO_LONG));
     }
   }
 
   private void validateTruckRegistration(String value) {
-    if (isProvided(value) && !value.matches(TRUCK_REGISTRATION_PATTERN)) {
+    if (StringUtils.isNotEmpty(value) && !value.matches(TRUCK_REGISTRATION_PATTERN)) {
       throw new ValidationException(ERROR_TRUCK_FORMAT);
     }
   }
 
   private static String message(String field, String suffix) {
     return field + " " + suffix;
-  }
-
-  // A field counts as provided only when it is non-null and non-empty; an empty value is treated
-  // the same as an absent one (the fields are optional).
-  private static boolean isProvided(String value) {
-    return value != null && !value.isEmpty();
   }
 }
