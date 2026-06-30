@@ -51,7 +51,7 @@ dependencies {
     compile "org.springframework.boot:spring-boot-starter-web"
     compile "org.slf4j:slf4j-ext"
     compile 'org.projectlombok:lombok:1.18.22'
-    compile "org.openlmis:openlmis-fulfillment:9.0.1:exec"
+    compile "org.openlmis:openlmis-fulfillment:9.3.2:exec"
     annotationProcessor 'org.projectlombok:lombok:1.18.22'
 
     testCompile "org.springframework.boot:spring-boot-starter-test"
