@@ -57,7 +57,7 @@ public class ConsulRouteRegistrarTest {
   }
 
   @Test
-  public void shouldRegisterBothExchangeRateRoutesOnStartup() {
+  public void shouldRegisterAllExtensionRoutesOnStartup() {
     when(restTemplate.exchange(any(String.class), eq(HttpMethod.PUT),
         any(HttpEntity.class), eq(String.class)))
         .thenReturn(ResponseEntity.ok("true"));
@@ -66,13 +66,14 @@ public class ConsulRouteRegistrarTest {
 
     ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<HttpEntity> bodyCaptor = ArgumentCaptor.forClass(HttpEntity.class);
-    verify(restTemplate, times(2)).exchange(urlCaptor.capture(), eq(HttpMethod.PUT),
+    verify(restTemplate, times(3)).exchange(urlCaptor.capture(), eq(HttpMethod.PUT),
         bodyCaptor.capture(), eq(String.class));
 
     List<String> urls = urlCaptor.getAllValues();
     assertThat(urls).containsExactly(
         "http://consul:8500/v1/kv/resources/api/exchangeRates",
-        "http://consul:8500/v1/kv/resources/api/exchangeRates/current");
+        "http://consul:8500/v1/kv/resources/api/exchangeRates/current",
+        "http://consul:8500/v1/kv/resources/api/extension/shipments/withAdditionalInfo");
     assertThat(bodyCaptor.getAllValues().get(0).getBody()).isEqualTo("fulfillment");
   }
 
