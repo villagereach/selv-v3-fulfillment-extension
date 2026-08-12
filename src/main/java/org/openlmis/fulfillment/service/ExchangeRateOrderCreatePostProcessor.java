@@ -15,71 +15,27 @@
 
 package org.openlmis.fulfillment.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import org.openlmis.fulfillment.domain.ExchangeRate;
 import org.openlmis.fulfillment.domain.Order;
 import org.openlmis.fulfillment.extension.point.OrderCreatePostProcessor;
-import org.openlmis.fulfillment.repository.ExchangeRateRepository;
-import org.openlmis.fulfillment.repository.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
- * After an order is created: delegates to the core default processor (FTP, e-mail), then snapshots
- * the current USD-MZM rate onto {@code Order.extraData} under the {@code exchangeRate} key as a
- * JSON object ({@code rate}, {@code exchangeRateId}, {@code capturedAt}) for the PoD report.
+ * Runs after an order is created: performs the core default behaviour (FTP, e-mail) and then
+ * snapshots the current exchange rate onto the order for the PoD and Order reports.
  */
 @Component("ExchangeRateOrderCreatePostProcessor")
 public class ExchangeRateOrderCreatePostProcessor implements OrderCreatePostProcessor {
-
-  static final String EXCHANGE_RATE = "exchangeRate";
-
-  private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Autowired
   private DefaultOrderCreatePostProcessor defaultOrderCreatePostProcessor;
 
   @Autowired
-  private ExchangeRateRepository exchangeRateRepository;
-
-  @Autowired
-  private OrderRepository orderRepository;
+  private ExchangeRateSnapshotService exchangeRateSnapshotService;
 
   @Override
   public void process(Order order) {
-    // Core default behaviour first (FTP, e-mail).
     defaultOrderCreatePostProcessor.process(order);
-
-    ExchangeRate current = exchangeRateRepository.findFirstByOrderByValidFromDescIdDesc();
-    if (current == null) {
-      return; // no rate yet — snapshot stays empty (nullable)
-    }
-
-    Map<String, Object> snapshot = new LinkedHashMap<>();
-    snapshot.put("rate", current.getRate());
-    snapshot.put("exchangeRateId", current.getId().toString());
-    snapshot.put("capturedAt", ZonedDateTime.now(ZoneOffset.UTC).toString());
-
-    // The passed order is detached (createOrder flushed+cleared); re-load the managed row, update
-    // extraData and explicitly re-persist (the .orElse fallback would otherwise be a no-op).
-    Order managed = orderRepository.findById(order.getId()).orElse(order);
-    Map<String, String> extraData = new HashMap<>(managed.getExtraData());
-    extraData.put(EXCHANGE_RATE, writeSnapshot(snapshot));
-    managed.setExtraData(extraData);
-    orderRepository.save(managed);
-  }
-
-  private String writeSnapshot(Map<String, Object> snapshot) {
-    try {
-      return objectMapper.writeValueAsString(snapshot);
-    } catch (JsonProcessingException ex) {
-      throw new IllegalStateException("Unable to serialize exchange rate snapshot", ex);
-    }
+    exchangeRateSnapshotService.snapshotCurrentRateIfAbsent(order);
   }
 }

@@ -15,83 +15,29 @@
 
 package org.openlmis.fulfillment.service;
 
-import static org.openlmis.fulfillment.service.ExchangeRateOrderCreatePostProcessor.EXCHANGE_RATE;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import org.openlmis.fulfillment.domain.ExchangeRate;
-import org.openlmis.fulfillment.domain.Order;
 import org.openlmis.fulfillment.domain.Shipment;
 import org.openlmis.fulfillment.extension.point.ShipmentCreatePostProcessor;
-import org.openlmis.fulfillment.repository.ExchangeRateRepository;
-import org.openlmis.fulfillment.repository.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
- * After a shipment is created: delegates to the core default processor (stock event), then snapshots
- * the current USD-MZM rate onto the shipment's {@code Order.extraData} under the
- * {@code exchangeRate} key for later usage in the reports (only if exchangeRate is absent).
- *
- * Requisition-less orders never pass through {@link ExchangeRateOrderCreatePostProcessor}: the
- * {@code OrderCreatePostProcessor} extension point is invoked only when converting a requisition to
- * an order, not on the requisition-less (local-fulfillment) creation path.
+ * Runs after a shipment is created: performs the core default behaviour (stock event) and then
+ * snapshots the current exchange rate onto the shipment's order. This covers requisition-less
+ * orders, which do not pass through the order-create extension point and would otherwise never
+ * have a rate captured.
  */
 @Component("ExchangeRateShipmentCreatePostProcessor")
 public class ExchangeRateShipmentCreatePostProcessor implements ShipmentCreatePostProcessor {
-
-  private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Autowired
   private DefaultShipmentCreatePostProcessor defaultShipmentCreatePostProcessor;
 
   @Autowired
-  private ExchangeRateRepository exchangeRateRepository;
-
-  @Autowired
-  private OrderRepository orderRepository;
+  private ExchangeRateSnapshotService exchangeRateSnapshotService;
 
   @Override
   public void process(Shipment shipment) {
-    // Core default behaviour first (stock event submission).
     defaultShipmentCreatePostProcessor.process(shipment);
-
-    Order order = shipment.getOrder();
-    if (order == null) {
-      return;
-    }
-
-    ExchangeRate current = exchangeRateRepository.findFirstByOrderByValidFromDescIdDesc();
-    if (current == null) {
-      return; // no rate yet — snapshot stays empty (nullable)
-    }
-
-    Order managed = orderRepository.findById(order.getId()).orElse(order);
-    Map<String, String> extraData = new HashMap<>(managed.getExtraData());
-    if (extraData.containsKey(EXCHANGE_RATE)) {
-      return; // keep the creation-time snapshot set by the order-create processor
-    }
-
-    Map<String, Object> snapshot = new LinkedHashMap<>();
-    snapshot.put("rate", current.getRate());
-    snapshot.put("exchangeRateId", current.getId().toString());
-    snapshot.put("capturedAt", ZonedDateTime.now(ZoneOffset.UTC).toString());
-
-    extraData.put(EXCHANGE_RATE, writeSnapshot(snapshot));
-    managed.setExtraData(extraData);
-    orderRepository.save(managed);
-  }
-
-  private String writeSnapshot(Map<String, Object> snapshot) {
-    try {
-      return objectMapper.writeValueAsString(snapshot);
-    } catch (JsonProcessingException ex) {
-      throw new IllegalStateException("Unable to serialize exchange rate snapshot", ex);
-    }
+    exchangeRateSnapshotService.snapshotCurrentRateIfAbsent(shipment.getOrder());
   }
 }
