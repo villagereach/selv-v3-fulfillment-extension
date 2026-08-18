@@ -24,26 +24,30 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import org.openlmis.fulfillment.domain.ExchangeRate;
 import org.openlmis.fulfillment.domain.Order;
-import org.openlmis.fulfillment.extension.point.OrderCreatePostProcessor;
+import org.openlmis.fulfillment.domain.Shipment;
+import org.openlmis.fulfillment.extension.point.ShipmentCreatePostProcessor;
 import org.openlmis.fulfillment.repository.ExchangeRateRepository;
 import org.openlmis.fulfillment.repository.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
- * After an order is created: delegates to the core default processor (FTP, e-mail), then snapshots
- * the current USD-MZM rate onto {@code Order.extraData} under the {@code exchangeRate} key as a
- * JSON object ({@code rate}, {@code exchangeRateId}, {@code capturedAt}) for the PoD report.
+ * Runs after a shipment is created: performs the core default behaviour (stock event) and then
+ * snapshots the current USD-MZM exchange rate onto the shipment's order for the PoD and Order
+ * reports. Shipment creation is the single point where the rate is captured, so it applies to
+ * every order regardless of how it was created. The value is stored under the {@code exchangeRate}
+ * key as a JSON object ({@code rate}, {@code exchangeRateId}, {@code capturedAt}); an order that
+ * already carries a snapshot is left untouched so repeated processing stays idempotent.
  */
-@Component("ExchangeRateOrderCreatePostProcessor")
-public class ExchangeRateOrderCreatePostProcessor implements OrderCreatePostProcessor {
+@Component("ExchangeRateShipmentCreatePostProcessor")
+public class ExchangeRateShipmentCreatePostProcessor implements ShipmentCreatePostProcessor {
 
   static final String EXCHANGE_RATE = "exchangeRate";
 
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Autowired
-  private DefaultOrderCreatePostProcessor defaultOrderCreatePostProcessor;
+  private DefaultShipmentCreatePostProcessor defaultShipmentCreatePostProcessor;
 
   @Autowired
   private ExchangeRateRepository exchangeRateRepository;
@@ -52,30 +56,35 @@ public class ExchangeRateOrderCreatePostProcessor implements OrderCreatePostProc
   private OrderRepository orderRepository;
 
   @Override
-  public void process(Order order) {
-    // Core default behaviour first (FTP, e-mail).
-    defaultOrderCreatePostProcessor.process(order);
+  public void process(Shipment shipment) {
+    defaultShipmentCreatePostProcessor.process(shipment);
+
+    Order order = shipment.getOrder();
+    if (order == null) {
+      return;
+    }
 
     ExchangeRate current = exchangeRateRepository.findFirstByOrderByValidFromDescIdDesc();
     if (current == null) {
-      return; // no rate yet — snapshot stays empty (nullable)
+      return;
     }
 
-    Map<String, Object> snapshot = new LinkedHashMap<>();
-    snapshot.put("rate", current.getRate());
-    snapshot.put("exchangeRateId", current.getId().toString());
-    snapshot.put("capturedAt", ZonedDateTime.now(ZoneOffset.UTC).toString());
-
-    // The passed order is detached (createOrder flushed+cleared); re-load the managed row, update
-    // extraData and explicitly re-persist (the .orElse fallback would otherwise be a no-op).
     Order managed = orderRepository.findById(order.getId()).orElse(order);
     Map<String, String> extraData = new HashMap<>(managed.getExtraData());
-    extraData.put(EXCHANGE_RATE, writeSnapshot(snapshot));
+    if (extraData.containsKey(EXCHANGE_RATE)) {
+      return;
+    }
+
+    extraData.put(EXCHANGE_RATE, serialize(current));
     managed.setExtraData(extraData);
     orderRepository.save(managed);
   }
 
-  private String writeSnapshot(Map<String, Object> snapshot) {
+  private String serialize(ExchangeRate rate) {
+    Map<String, Object> snapshot = new LinkedHashMap<>();
+    snapshot.put("rate", rate.getRate());
+    snapshot.put("exchangeRateId", rate.getId().toString());
+    snapshot.put("capturedAt", ZonedDateTime.now(ZoneOffset.UTC).toString());
     try {
       return objectMapper.writeValueAsString(snapshot);
     } catch (JsonProcessingException ex) {

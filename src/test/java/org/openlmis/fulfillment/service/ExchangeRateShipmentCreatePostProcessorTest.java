@@ -38,14 +38,18 @@ import org.mockito.junit.MockitoJUnitRunner;
 import org.openlmis.fulfillment.OrderDataBuilder;
 import org.openlmis.fulfillment.domain.ExchangeRate;
 import org.openlmis.fulfillment.domain.Order;
+import org.openlmis.fulfillment.domain.Shipment;
 import org.openlmis.fulfillment.repository.ExchangeRateRepository;
 import org.openlmis.fulfillment.repository.OrderRepository;
 
 @RunWith(MockitoJUnitRunner.class)
-public class ExchangeRateOrderCreatePostProcessorTest {
+public class ExchangeRateShipmentCreatePostProcessorTest {
+
+  // Kept as a literal (not the production constant) to guard the exact key the report SQL reads.
+  private static final String EXCHANGE_RATE_KEY = "exchangeRate";
 
   @Mock
-  private DefaultOrderCreatePostProcessor defaultOrderCreatePostProcessor;
+  private DefaultShipmentCreatePostProcessor defaultShipmentCreatePostProcessor;
 
   @Mock
   private ExchangeRateRepository exchangeRateRepository;
@@ -53,8 +57,11 @@ public class ExchangeRateOrderCreatePostProcessorTest {
   @Mock
   private OrderRepository orderRepository;
 
+  @Mock
+  private Shipment shipment;
+
   @InjectMocks
-  private ExchangeRateOrderCreatePostProcessor processor;
+  private ExchangeRateShipmentCreatePostProcessor processor;
 
   private Order order;
 
@@ -64,30 +71,30 @@ public class ExchangeRateOrderCreatePostProcessorTest {
   }
 
   @Test
-  public void shouldDelegateToDefaultProcessorBeforeSnapshotting() {
+  public void shouldRunDefaultProcessorBeforeSnapshotting() {
+    when(shipment.getOrder()).thenReturn(order);
     when(exchangeRateRepository.findFirstByOrderByValidFromDescIdDesc())
-        .thenReturn(rate("64.250000"));
+        .thenReturn(rate(UUID.randomUUID(), "64.250000"));
     when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
 
-    processor.process(order);
+    processor.process(shipment);
 
-    InOrder inOrder = inOrder(defaultOrderCreatePostProcessor, orderRepository);
-    inOrder.verify(defaultOrderCreatePostProcessor).process(order);
-    inOrder.verify(orderRepository).findById(order.getId());
+    InOrder inOrder = inOrder(defaultShipmentCreatePostProcessor, orderRepository);
+    inOrder.verify(defaultShipmentCreatePostProcessor).process(shipment);
+    inOrder.verify(orderRepository).save(order);
   }
 
   @Test
-  public void shouldSnapshotCurrentRateIntoExtraData() {
+  public void shouldSnapshotCurrentRateWhenOrderHasNoRate() {
     UUID rateId = UUID.randomUUID();
-    ExchangeRate current = new ExchangeRate(new BigDecimal("64.250000"),
-        ZonedDateTime.now(), UUID.randomUUID());
-    current.setId(rateId);
-    when(exchangeRateRepository.findFirstByOrderByValidFromDescIdDesc()).thenReturn(current);
+    when(shipment.getOrder()).thenReturn(order);
+    when(exchangeRateRepository.findFirstByOrderByValidFromDescIdDesc())
+        .thenReturn(rate(rateId, "64.250000"));
     when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
 
-    processor.process(order);
+    processor.process(shipment);
 
-    String snapshot = order.getExtraData().get("exchangeRate");
+    String snapshot = order.getExtraData().get(EXCHANGE_RATE_KEY);
     assertThat(snapshot).contains("\"rate\":64.250000");
     assertThat(snapshot).contains("\"exchangeRateId\":\"" + rateId + "\"");
     assertThat(snapshot).contains("\"capturedAt\":");
@@ -95,35 +102,48 @@ public class ExchangeRateOrderCreatePostProcessorTest {
   }
 
   @Test
-  public void shouldNotSnapshotWhenNoCurrentRate() {
-    when(exchangeRateRepository.findFirstByOrderByValidFromDescIdDesc()).thenReturn(null);
+  public void shouldKeepExistingSnapshotAndNotOverwrite() {
+    Map<String, String> existing = new HashMap<>();
+    existing.put(EXCHANGE_RATE_KEY, "{\"rate\":10.000000}");
+    order.setExtraData(existing);
+    when(shipment.getOrder()).thenReturn(order);
+    when(exchangeRateRepository.findFirstByOrderByValidFromDescIdDesc())
+        .thenReturn(rate(UUID.randomUUID(), "64.250000"));
+    when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
 
-    processor.process(order);
+    processor.process(shipment);
 
-    assertThat(order.getExtraData()).doesNotContainKey("exchangeRate");
-    verify(defaultOrderCreatePostProcessor).process(order);
-    verify(orderRepository, never()).findById(any());
+    assertThat(order.getExtraData().get(EXCHANGE_RATE_KEY)).isEqualTo("{\"rate\":10.000000}");
+    verify(orderRepository, never()).save(any());
   }
 
   @Test
-  public void shouldPreserveExistingExtraData() {
-    Map<String, String> existing = new HashMap<>();
-    existing.put("foo", "bar");
-    order.setExtraData(existing);
-    when(exchangeRateRepository.findFirstByOrderByValidFromDescIdDesc())
-        .thenReturn(rate("10.000000"));
-    when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
+  public void shouldNotSnapshotWhenNoCurrentRate() {
+    when(shipment.getOrder()).thenReturn(order);
+    when(exchangeRateRepository.findFirstByOrderByValidFromDescIdDesc()).thenReturn(null);
 
-    processor.process(order);
+    processor.process(shipment);
 
-    assertThat(order.getExtraData()).containsEntry("foo", "bar");
-    assertThat(order.getExtraData().get("exchangeRate")).contains("\"rate\":10.000000");
+    assertThat(order.getExtraData()).doesNotContainKey(EXCHANGE_RATE_KEY);
+    verify(orderRepository, never()).findById(any());
+    verify(orderRepository, never()).save(any());
   }
 
-  private ExchangeRate rate(String value) {
-    ExchangeRate exchangeRate = new ExchangeRate(new BigDecimal(value),
-        ZonedDateTime.now(), UUID.randomUUID());
-    exchangeRate.setId(UUID.randomUUID());
+  @Test
+  public void shouldIgnoreShipmentWithoutOrder() {
+    when(shipment.getOrder()).thenReturn(null);
+
+    processor.process(shipment);
+
+    verify(defaultShipmentCreatePostProcessor).process(shipment);
+    verify(exchangeRateRepository, never()).findFirstByOrderByValidFromDescIdDesc();
+    verify(orderRepository, never()).save(any());
+  }
+
+  private ExchangeRate rate(UUID id, String value) {
+    ExchangeRate exchangeRate =
+        new ExchangeRate(new BigDecimal(value), ZonedDateTime.now(), UUID.randomUUID());
+    exchangeRate.setId(id);
     return exchangeRate;
   }
 }
