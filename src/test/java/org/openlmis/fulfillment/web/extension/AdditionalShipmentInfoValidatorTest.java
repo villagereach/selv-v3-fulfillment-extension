@@ -146,6 +146,13 @@ public class AdditionalShipmentInfoValidatorTest {
   }
 
   @Test
+  public void shouldAcceptNoVehiclePlaceholderTruckRegistration() {
+    // Last-mile without a vehicle: the XXXXXXXX placeholder is accepted instead of a plate.
+    assertThat(catchThrowable(() -> validator.validate(map(TRUCK_REGISTRATION, "XXXXXXXX"))))
+        .isNull();
+  }
+
+  @Test
   public void shouldRejectMalformedTruckRegistration() {
     // No dashes or other separators are allowed; the groups run together (AAA123XX).
     String[] malformed = {"abc123xx", "AB1234XX", "ABC12XX", "AAA123A", "AAA1234XX", "AAA123",
@@ -180,8 +187,7 @@ public class AdditionalShipmentInfoValidatorTest {
     assertThat(catchThrowable(() -> validator.validate(map(PACKING_PERSON, text(256)))))
         .hasMessageContaining("packingPerson must be at most 255 characters");
     assertThat(catchThrowable(() -> validator.validate(map(TRUCK_REGISTRATION, "abc"))))
-        .hasMessageContaining("Truck registration must match the format AAA123XX "
-            + "(three letters, three digits, two letters).");
+        .hasMessageContaining("Truck registration must match the format AAA123XX");
   }
 
   private static Map<String, String> map(String key, String value) {

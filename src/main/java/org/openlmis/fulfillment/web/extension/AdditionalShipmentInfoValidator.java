@@ -24,7 +24,8 @@ import org.springframework.stereotype.Component;
  * Validates the SELV additional shipment fields carried in {@code ShipmentDto.extraData} before the
  * shipment is created. Every field is optional, so a value is checked only when it is present:
  * the counter fields must be non-negative whole numbers, the truck registration must match the
- * Mozambican plate format, and the free-text fields are length-bounded.
+ * Mozambican plate format or the {@code XXXXXXXX} no-vehicle placeholder, and the free-text fields
+ * are length-bounded.
  */
 @Component
 public class AdditionalShipmentInfoValidator {
@@ -43,6 +44,9 @@ public class AdditionalShipmentInfoValidator {
   // Keep byte-identical with the UI (selv-v3-ui choose-date-modal.controller.js
   // truckRegistrationPattern).
   static final String TRUCK_REGISTRATION_PATTERN = "^[A-Z]{3}[0-9]{3}[A-Z]{2}$";
+  // Placeholder for last-mile delivery where the transport is not a vehicle and no real plate
+  // exists; accepted verbatim in place of the plate format. Keep in sync with selv-v3-ui.
+  static final String NO_VEHICLE_PLACEHOLDER = "XXXXXXXX";
   // ASCII digits only - Integer.parseInt would also accept Unicode digits (e.g. Arabic-Indic) and
   // a leading sign. 1-9 digits keeps the value a non-negative integer within int range, so a
   // downstream report cast cannot overflow.
@@ -55,7 +59,8 @@ public class AdditionalShipmentInfoValidator {
   static final String ERROR_TEXT_TOO_LONG = "must be at most " + MAX_TEXT_LENGTH + " characters";
   static final String ERROR_TRUCK_FORMAT =
       "Truck registration must match the format AAA123XX "
-          + "(three letters, three digits, two letters).";
+          + "(three letters, three digits, two letters), or " + NO_VEHICLE_PLACEHOLDER
+          + " when the transport is not a vehicle.";
 
   /**
    * Validates the additional shipment fields. Each field is optional; a present value is checked
@@ -90,7 +95,10 @@ public class AdditionalShipmentInfoValidator {
   }
 
   private void validateTruckRegistration(String value) {
-    if (StringUtils.isNotEmpty(value) && !value.matches(TRUCK_REGISTRATION_PATTERN)) {
+    if (StringUtils.isEmpty(value) || NO_VEHICLE_PLACEHOLDER.equals(value)) {
+      return;
+    }
+    if (!value.matches(TRUCK_REGISTRATION_PATTERN)) {
       throw new ValidationException(ERROR_TRUCK_FORMAT);
     }
   }
