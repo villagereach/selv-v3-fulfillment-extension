@@ -20,6 +20,29 @@ This example is meant to show an OpenLMIS 3.x Fulfillment Extension Module at wo
 5. Run builder for `selv-v3-extensions-config` and build image.
 6. Run `selv-v3-ref-distro` using `docker-compose.selv-v3-fulfillment-extension.yml` and check if your changes has been applied.
 
+## Required manual configuration
+
+#### EXCHANGE_RATE_MANAGE right (SELV3-845)
+`ExchangeRateController` requires the `EXCHANGE_RATE_MANAGE` right to add a rate, and the SELV UI
+shows the Exchange Rate administration screen only to users holding it. Rights live in the
+referencedata service, which this module cannot migrate, so the right is provisioned by hand,
+once per environment, after the first deployment that includes the exchange rate endpoints.
+
+Preferred: the referencedata rights API with a service-level token (upserts by name, safe to repeat):
+
+```shell
+TOKEN=$(curl -s -X POST -u "$AUTH_SERVER_CLIENT_ID:$AUTH_SERVER_CLIENT_SECRET" \
+  "https://<host>/api/oauth/token?grant_type=client_credentials" | python3 -c 'import sys,json;print(json.load(sys.stdin)["access_token"])')
+curl -s -X PUT "https://<host>/api/rights" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"id":"fb86b91f-e003-41f0-9037-08ed1a9489a9","name":"EXCHANGE_RATE_MANAGE","type":"GENERAL_ADMIN"}'
+```
+
+Equivalent SQL for psql: [src/main/resources/db/manual/add_exchange_rate_manage_right.sql](src/main/resources/db/manual/add_exchange_rate_manage_right.sql).
+
+The type must be `GENERAL_ADMIN` (the right is checked without a program or facility). After adding
+the right, assign it to a role on the Administration > Roles screen and give that role to the users
+who manage exchange rates.
+
 ## <a name="extensions"></a> Example of extensions usage
 
 #### General information
