@@ -7,6 +7,7 @@ Bug Fixes:
 * [SELVSUP-40](https://openlmis.atlassian.net/browse/SELVSUP-40) Fixed multiple orders error by introducing atomic sequence generation using PostgreSQL UPSERT (facility_order_sequence table)
 
 Improvements:
+* [SELV3-886](https://openlmis.atlassian.net/browse/SELV3-886) Build against openlmis-fulfillment 9.4.2 (OpenLMIS 3.20.2).
 * [SELV3-845](https://openlmis.atlassian.net/browse/SELV3-845) Document the `EXCHANGE_RATE_MANAGE` right, which must be added to referencedata by hand per environment (see README and `db/manual/add_exchange_rate_manage_right.sql`).
 * [SELV3-847](https://openlmis.atlassian.net/browse/SELV3-847) Capture the exchange rate when a shipment is created, as the single capture point for every order, and remove the order-create hook.
 * [SELV3-844](https://openlmis.atlassian.net/browse/SELV3-844) Add exchange rate model and endpoints.
